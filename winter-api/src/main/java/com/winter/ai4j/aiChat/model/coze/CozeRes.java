@@ -1,4 +1,4 @@
-package com.winter.ai4j.aiChat.model.dto;
+package com.winter.ai4j.aiChat.model.coze;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import io.swagger.annotations.ApiModel;
@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @ApiModel(value = "Coze返回的泛型数据", description = "Coze返回的泛型数据")
-public class CozeResDTO<T> {
+public class CozeRes<T> {
 
 
     @JSONField(name = "code")

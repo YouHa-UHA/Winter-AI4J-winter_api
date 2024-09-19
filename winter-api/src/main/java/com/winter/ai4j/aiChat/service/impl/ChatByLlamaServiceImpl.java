@@ -94,14 +94,14 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
         //             responseString = execute.body().string();
         //         }
         //         // TypeReference是fastjson提供的一个类，用于实现泛型的反序列化。
-        //         CozeResDTO<CozeCreateResDTO> cozeResDTO = JSON.parseObject
-        //                 (responseString, new TypeReference<CozeResDTO<CozeCreateResDTO>>() {});
+        //         CozeRes<CozeCreateRes> cozeResDTO = JSON.parseObject
+        //                 (responseString, new TypeReference<CozeRes<CozeCreateRes>>() {});
         //         log.info("创建会话成功:{}", cozeResDTO);
         //         // Optional.ofNullable(T t) 方法的作用是判断t是否为null，
         //         // 中间任何一步为空都会返回一个空的Optional对象，不会抛出空指针异常。
         //         return Optional.ofNullable(cozeResDTO)
-        //                 .map(CozeResDTO::getData)
-        //                 .map(CozeCreateResDTO::getId)
+        //                 .map(CozeRes::getData)
+        //                 .map(CozeCreateRes::getId)
         //                 .orElse(null);
         //     }
         // } catch (IOException e) {

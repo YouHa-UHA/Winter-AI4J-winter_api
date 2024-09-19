@@ -5,8 +5,10 @@ import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
+import com.winter.ai4j.aiChat.model.coze.CozeCreateRes;
 import com.winter.ai4j.aiChat.model.coze.CozeQueReq;
 import com.winter.ai4j.aiChat.model.coze.CozeQueRes;
+import com.winter.ai4j.aiChat.model.coze.CozeRes;
 import com.winter.ai4j.aiChat.model.dto.*;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
@@ -17,7 +19,6 @@ import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
-import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -104,14 +105,14 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                     responseString = execute.body().string();
                 }
                 // TypeReference是fastjson提供的一个类，用于实现泛型的反序列化。
-                CozeResDTO<CozeCreateResDTO> cozeResDTO = JSON.parseObject
-                        (responseString, new TypeReference<CozeResDTO<CozeCreateResDTO>>() {});
-                log.info("创建会话成功:{}", cozeResDTO);
+                CozeRes<CozeCreateRes> cozeRes = JSON.parseObject
+                        (responseString, new TypeReference<CozeRes<CozeCreateRes>>() {});
+                log.info("创建会话成功:{}", cozeRes);
                 // Optional.ofNullable(T t) 方法的作用是判断t是否为null，
                 // 中间任何一步为空都会返回一个空的Optional对象，不会抛出空指针异常。
-                return Optional.ofNullable(cozeResDTO)
-                        .map(CozeResDTO::getData)
-                        .map(CozeCreateResDTO::getId)
+                return Optional.ofNullable(cozeRes)
+                        .map(CozeRes::getData)
+                        .map(CozeCreateRes::getId)
                         .orElse(null);
             }
         } catch (IOException e) {
