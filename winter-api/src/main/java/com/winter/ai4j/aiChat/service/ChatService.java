@@ -1,6 +1,7 @@
 package com.winter.ai4j.aiChat.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -25,6 +26,7 @@ public interface ChatService extends IService<ApiKeyPO> {
     /*
     * 进行会话
     * */
-    String proceedChat(SseEmitter emitter);
+    String question(SseEmitter emitter, QuestionDTO question);
+
 
 }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
+import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import lombok.extern.slf4j.Slf4j;
@@ -114,7 +115,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
      * 进行会话
      * */
     @Override
-    public String proceedChat(SseEmitter emitter) {
+    public String question(SseEmitter emitter, QuestionDTO question) {
         // 创建OkHttpClient对象用于发送请求
         OkHttpClient httpClient = new OkHttpClient.Builder()
                 .readTimeout(180, TimeUnit.SECONDS)

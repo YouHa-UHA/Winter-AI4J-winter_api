@@ -1,6 +1,6 @@
 package com.winter.ai4j.aiChat.controller;
 
-import com.winter.ai4j.aiChat.model.dto.Question;
+import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.common.result.Result;
 import io.swagger.annotations.Api;
@@ -28,7 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Api(tags = "Coze模块")
 @Slf4j
 @RestController
-@RequestMapping(value = "/system/coze")
+@RequestMapping(value = "/system/chat")
 public class ChatController {
 
     @Autowired
@@ -42,12 +42,12 @@ public class ChatController {
 
     /**
      * Coze-创建会话
-     * @param userID 用户ID
+     * @param userId 用户ID
      * @return 创建chat 结果
      */
-    @ApiOperation(value = "Coze-创建会话", notes = "创建对话")
+    @ApiOperation(value = "chat-创建会话", notes = "创建对话")
     @PostMapping(value = "/create")
-    public Result<String> createCoze(@RequestBody String userID) {
+    public Result<String> createCoze(@RequestBody String userId) {
         String chat = chatByCoseService.createChat();
         return Result.ok(chat);
     }
@@ -57,16 +57,19 @@ public class ChatController {
      * Coze-进行对话
      * @return 进行对话结果
      */
-    @ApiOperation(value = "Coze-进行对话", notes = "进行对话")
-    @PostMapping(value = "/proceed")
-    public SseEmitter proceedConversationCoze(@RequestBody Question question) {
-        // llama 进行对话
+    @ApiOperation(value = "chat-进行对话", notes = "进行对话")
+    @PostMapping(value = "/question")
+    public SseEmitter chatByCoze(@RequestBody QuestionDTO question) {
+        // TODO 后期载入分布式锁，防止用户发起多次提问
+
+        // 创建SseEmitter对象
         SseEmitter emitter = new SseEmitter(1800000L);
         emitter.onCompletion(() -> {
         });
         emitter.onTimeout(() -> {
         });
-        // chatByLlamaService.proceedChat(emitter); // ollama 存在问题，先不要用
+        chatByCoseService.question(emitter, question);
+        // chatByLlamaService.questionDTO(emitter); // ollama 存在问题，先不要用
         return emitter;
     }
 
