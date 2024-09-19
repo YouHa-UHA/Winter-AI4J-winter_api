@@ -163,7 +163,6 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
 
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
 
-
                     String line;
                     while ((line = reader.readLine())!= null) {
                         // 在这里处理接收到的 SSE 事件数据

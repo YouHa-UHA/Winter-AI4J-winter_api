@@ -52,8 +52,6 @@ public class ChatController {
         return Result.ok(chat);
     }
 
-    // 我在这里写一行注释，展示一下提交和推送
-    // 提交是提交到本地git仓库的暂存区，推送是把暂存区当中的，推送到远端仓库
 
     /**
      * Coze-进行对话
@@ -68,7 +66,7 @@ public class ChatController {
         });
         emitter.onTimeout(() -> {
         });
-        chatByLlamaService.proceedChat(emitter);
+        // chatByLlamaService.proceedChat(emitter); // ollama 存在问题，先不要用
         return emitter;
     }
 
