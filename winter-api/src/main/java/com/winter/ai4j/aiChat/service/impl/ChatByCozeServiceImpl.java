@@ -151,13 +151,17 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyPO.getModelKey())
                 .post(requestBody).build();
 
-        // 创建事件源，进行连接与消息的接收，传入请求与监听器
+        // 进行连接与消息的接收，传入请求与监听器
         RealEventSource realEventSource = new RealEventSource(request, new CozeEventSourceListener(question, emitter));
+        // 连接
         realEventSource.connect(HTTP_CLIENT);
-
         return null;
     }
 
+
+    /*
+    * 监听器
+    * */
     public class CozeEventSourceListener extends EventSourceListener {
 
         private final QuestionDTO question;
