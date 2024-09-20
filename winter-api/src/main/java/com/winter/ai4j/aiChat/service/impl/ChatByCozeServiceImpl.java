@@ -128,29 +128,33 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * */
     @Override
     public String question(SseEmitter emitter, QuestionDTO question) {
-        // TODO 补全注释
+        // 获取对应的Agent对象
         ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
-        // 创建
+        // 创建OkHttpClient对象
         OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
                 .readTimeout(180, TimeUnit.SECONDS)
                 .writeTimeout(180, TimeUnit.SECONDS)
                 .connectTimeout(180, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true).build();
-        // 构建请求体
+        // 构建复合请求体
         CozeQueReq.CozeQueReqMessage cozeQueReqMessage = CozeQueReq.CozeQueReqMessage.builder().role("user")
                 .type("question").content(question.getQuestion()).content_type("text").build();
         List<CozeQueReq.CozeQueReqMessage> additionalMessages = new ArrayList<>();
         additionalMessages.add(cozeQueReqMessage);
-        CozeQueReq cozeQueReq = CozeQueReq.builder().bot_id(apiKeyPO.getAgentId()).user_id("123456789").stream(true)
-                .auto_save_history(true).additional_messages(additionalMessages).build();
+        CozeQueReq cozeQueReq = CozeQueReq.builder().bot_id(apiKeyPO.getAgentId()).user_id("123456789")
+                .stream(true).auto_save_history(true).additional_messages(additionalMessages).build();
         RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq), MediaType.parse("application/json"));
+
+        // 构建请求地域性
         Request request = new Request.Builder().url(apiKeyPO.getUrl() + "?conversation_id=" + question.getChatId())
                 .addHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
                 .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyPO.getModelKey())
                 .post(requestBody).build();
 
+        // 创建事件源，进行连接与消息的接收，传入请求与监听器
         RealEventSource realEventSource = new RealEventSource(request, new CozeEventSourceListener(question, emitter));
         realEventSource.connect(HTTP_CLIENT);
+
         return null;
     }
 
@@ -168,6 +172,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         }
         @Override
         public void onEvent(@NotNull EventSource eventSource, String id, String type, @NotNull String data) {
+            // 判断消息类型(这是coze的约定)
             if ("error".equals(type)) {
                 onFailure(eventSource, new RuntimeException("error"), null);
                 return;
@@ -185,11 +190,14 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 String sendData = JSON.toJSONString(chatVO);
                 sendEventDataToUser(emitter, eventSource, sendData);
             }
+
         }
+
         @Override
         public void onClosed(EventSource eventSource) {
             eventSource.cancel();
         }
+
         @Override
         public void onFailure(EventSource eventSource, Throwable t, Response response) {
 
@@ -201,11 +209,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     * */
     public void sendEventDataToUser(SseEmitter emitter, EventSource eventSource, String message) {
         try {
+            // 发送消息
             emitter.send(SseEmitter.event().data(message));
         } catch (IOException e) {
             eventSource.cancel();
         }
-
     }
 
 }

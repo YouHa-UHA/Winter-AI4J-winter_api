@@ -62,12 +62,10 @@ public class ChatController {
     public SseEmitter chatByCoze(@RequestBody QuestionDTO question) {
         // TODO 后期载入分布式锁，防止用户发起多次提问
 
-        // 创建SseEmitter对象
+        // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
         SseEmitter emitter = new SseEmitter(1800000L);
-        emitter.onCompletion(() -> {
-        });
-        emitter.onTimeout(() -> {
-        });
+        emitter.onCompletion(() -> {});
+        emitter.onTimeout(() -> {});
         chatByCoseService.question(emitter, question);
         // chatByLlamaService.questionDTO(emitter); // ollama 存在问题，先不要用
         return emitter;
