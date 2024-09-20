@@ -72,7 +72,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         }
     }
 
-
     /*
      * 创建会话
      * */
@@ -137,12 +136,21 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .connectTimeout(180, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true).build();
         // 构建复合请求体
-        CozeQueReq.CozeQueReqMessage cozeQueReqMessage = CozeQueReq.CozeQueReqMessage.builder().role("user")
-                .type("question").content(question.getQuestion()).content_type("text").build();
+        CozeQueReq.CozeQueReqMessage cozeQueReqMessage = CozeQueReq.CozeQueReqMessage.builder()
+                .role("user")
+                .type("question")
+                .content(question.getQuestion())
+                .content_type("text")
+                .build();
         List<CozeQueReq.CozeQueReqMessage> additionalMessages = new ArrayList<>();
         additionalMessages.add(cozeQueReqMessage);
-        CozeQueReq cozeQueReq = CozeQueReq.builder().bot_id(apiKeyPO.getAgentId()).user_id("123456789")
-                .stream(true).auto_save_history(true).additional_messages(additionalMessages).build();
+        CozeQueReq cozeQueReq = CozeQueReq.builder()
+                .bot_id(apiKeyPO.getAgentId())
+                .user_id("123456789")
+                .stream(true)
+                .auto_save_history(true)
+                .additional_messages(additionalMessages)
+                .build();
         RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq), MediaType.parse("application/json"));
 
         // 构建请求地域性
@@ -171,9 +179,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             this.question = question;
             this.emitter = emitter;
         }
+
         @Override
         public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
         }
+
         @Override
         public void onEvent(@NotNull EventSource eventSource, String id, String type, @NotNull String data) {
             // 判断消息类型(这是coze的约定)
@@ -190,7 +200,13 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             String chatId = question.getChatId();
             if ("conversation.message.delta".equals(type)) {
                 String answerContent = cozeResponseWrapper.getContent();
-                ChatVO chatVO = ChatVO.builder().isFinish(false).userId(null).answer(answerContent).chatId(chatId).date(formatted).build();
+                ChatVO chatVO = ChatVO.builder()
+                        .isFinish(false)
+                        .userId(null)
+                        .answer(answerContent)
+                        .chatId(chatId)
+                        .date(formatted)
+                        .build();
                 String sendData = JSON.toJSONString(chatVO);
                 sendEventDataToUser(emitter, eventSource, sendData);
             }
