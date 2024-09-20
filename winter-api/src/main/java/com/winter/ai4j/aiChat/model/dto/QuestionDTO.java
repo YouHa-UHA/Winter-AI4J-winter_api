@@ -39,6 +39,4 @@ public class QuestionDTO implements Serializable {
     private String question;
 
 
-
-
 }

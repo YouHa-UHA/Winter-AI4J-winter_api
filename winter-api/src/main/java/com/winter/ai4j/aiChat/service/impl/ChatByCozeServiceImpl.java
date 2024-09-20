@@ -9,7 +9,7 @@ import com.winter.ai4j.aiChat.model.coze.CozeCreateRes;
 import com.winter.ai4j.aiChat.model.coze.CozeQueReq;
 import com.winter.ai4j.aiChat.model.coze.CozeQueRes;
 import com.winter.ai4j.aiChat.model.coze.CozeRes;
-import com.winter.ai4j.aiChat.model.dto.*;
+import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.service.ChatService;
@@ -19,7 +19,6 @@ import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
-import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -80,11 +79,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     public String createChat() {
         // TODO 后边增加一个全局异常的链接类,直接捕获全局返回模型丢失
         //增加判空，避免接口错误
-        if (apiKeys.get("ai_coze_create") == null) {
+        if (apiKeys.get("ai_coze") == null) {
             log.info("无法找到Coze对应的API Key");
             return "无法找到Coze对应的API Key";
         }
-        ApiKeyPO cozeCreat = apiKeys.get("ai_coze_create");
+        ApiKeyPO cozeCreat = apiKeys.get("ai_coze");
         OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
@@ -114,12 +113,14 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .map(CozeRes::getData)
                         .map(CozeCreateRes::getId)
                         .orElse(null);
+            }else{
+                log.error("创建会话失败:{}", execute.body().string());
+                return null;
             }
         } catch (IOException e) {
             log.error("创建会话失败", e);
             return null;
         }
-        return null;
     }
 
 
