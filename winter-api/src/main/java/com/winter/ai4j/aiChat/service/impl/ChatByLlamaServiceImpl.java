@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
+import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import lombok.extern.slf4j.Slf4j;
@@ -93,14 +94,14 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
         //             responseString = execute.body().string();
         //         }
         //         // TypeReference是fastjson提供的一个类，用于实现泛型的反序列化。
-        //         CozeResDTO<CozeCreateResDTO> cozeResDTO = JSON.parseObject
-        //                 (responseString, new TypeReference<CozeResDTO<CozeCreateResDTO>>() {});
+        //         CozeRes<CozeCreateRes> cozeResDTO = JSON.parseObject
+        //                 (responseString, new TypeReference<CozeRes<CozeCreateRes>>() {});
         //         log.info("创建会话成功:{}", cozeResDTO);
         //         // Optional.ofNullable(T t) 方法的作用是判断t是否为null，
         //         // 中间任何一步为空都会返回一个空的Optional对象，不会抛出空指针异常。
         //         return Optional.ofNullable(cozeResDTO)
-        //                 .map(CozeResDTO::getData)
-        //                 .map(CozeCreateResDTO::getId)
+        //                 .map(CozeRes::getData)
+        //                 .map(CozeCreateRes::getId)
         //                 .orElse(null);
         //     }
         // } catch (IOException e) {
@@ -114,7 +115,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
      * 进行会话
      * */
     @Override
-    public String proceedChat(SseEmitter emitter) {
+    public String question(SseEmitter emitter, QuestionDTO question) {
         // 创建OkHttpClient对象用于发送请求
         OkHttpClient httpClient = new OkHttpClient.Builder()
                 .readTimeout(180, TimeUnit.SECONDS)
@@ -162,7 +163,6 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
                 }
 
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
-
 
                     String line;
                     while ((line = reader.readLine())!= null) {

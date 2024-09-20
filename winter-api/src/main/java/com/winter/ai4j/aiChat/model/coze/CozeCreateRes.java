@@ -1,4 +1,4 @@
-package com.winter.ai4j.aiChat.model.dto;
+package com.winter.ai4j.aiChat.model.coze;
 
 import com.alibaba.fastjson2.annotation.JSONType;
 import io.swagger.annotations.ApiModel;
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 /**
  * ClassName: CozeCreateRes
  * <blockquote><pre>
- * Description: [CozeCreateRes]
+ * Description: [Coze消息创建返回]
  * </pre></blockquote>
  *
  * @author WYH4J
@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @ApiModel(value = "Coze消息创建返回", description = "Coze消息创建返回")
-public class CozeCreateResDTO {
+public class CozeCreateRes {
 
     @ApiModelProperty(value = "创建时间", required = true)
     String created_at;

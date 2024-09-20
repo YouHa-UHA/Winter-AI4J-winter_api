@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.winter</groupId>
-    <artifactId>Winter-AI4J</artifactId>
+    <artifactId>winter-api</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
