@@ -19,6 +19,7 @@ import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
+import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -127,15 +128,15 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * */
     @Override
     public String question(SseEmitter emitter, QuestionDTO question) {
-        // 获取对应的Agent对象
+
         ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
-        // 创建OkHttpClient对象
+
         OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
                 .readTimeout(180, TimeUnit.SECONDS)
                 .writeTimeout(180, TimeUnit.SECONDS)
                 .connectTimeout(180, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true).build();
-        // 构建复合请求体
+
         CozeQueReq.CozeQueReqMessage cozeQueReqMessage = CozeQueReq.CozeQueReqMessage.builder()
                 .role("user")
                 .type("question")
@@ -153,7 +154,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .build();
         RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq), MediaType.parse("application/json"));
 
-        // 构建请求地域性
         Request request = new Request.Builder().url(apiKeyPO.getUrl() + "?conversation_id=" + question.getChatId())
                 .addHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
                 .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyPO.getModelKey())
@@ -161,7 +161,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         // 进行连接与消息的接收，传入请求与监听器
         RealEventSource realEventSource = new RealEventSource(request, new CozeEventSourceListener(question, emitter));
-        // 连接
         realEventSource.connect(HTTP_CLIENT);
         return null;
     }
@@ -194,7 +193,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             if ("done".equals(type)) {
                 return;
             }
-            // 接收消息转换
+
             CozeQueRes cozeResponseWrapper = JSON.parseObject(data, CozeQueRes.class);
             String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
             String chatId = question.getChatId();
@@ -209,6 +208,12 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .build();
                 String sendData = JSON.toJSONString(chatVO);
                 sendEventDataToUser(emitter, eventSource, sendData);
+            }
+            if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeResponseWrapper.getType())) {
+                // 联想问题
+            }
+            if ("conversation.message.completed".equals(type) && "answer".equals(cozeResponseWrapper.getType())) {
+                // 结束会话
             }
 
         }
