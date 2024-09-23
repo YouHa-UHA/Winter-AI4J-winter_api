@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.user.mapper.UserMapper;
+import com.winter.ai4j.user.model.dto.UserDTO;
 import com.winter.ai4j.user.model.entity.UserPO;
 import com.winter.ai4j.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserPO>  implements
 
 
     @Override
-    public String login(UserPO req) {
+    public String login(UserDTO req) {
 
         LambdaQueryWrapper<UserPO> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(UserPO::getPhone, req.getPhone());

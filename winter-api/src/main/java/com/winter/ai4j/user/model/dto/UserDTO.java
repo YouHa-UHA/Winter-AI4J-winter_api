@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * ClassName: UserPO
+ * ClassName: UserDTO
  * <blockquote><pre>
  * Description: [描述]
  * </pre></blockquote>
@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @TableName("user")
-public class UserPO extends BaseEntity {
+public class UserDTO {
 
     @ApiModelProperty(value = "手机号", required = true)
     @TableField("phone")

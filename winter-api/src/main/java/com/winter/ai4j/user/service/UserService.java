@@ -1,6 +1,7 @@
 package com.winter.ai4j.user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.winter.ai4j.user.model.dto.UserDTO;
 import com.winter.ai4j.user.model.entity.UserPO;
 
 /**
@@ -19,6 +20,6 @@ public interface UserService extends IService<UserPO> {
     /*
     * 用户登录
     * */
-    String login(UserPO req);
+    String login(UserDTO req);
 
 }

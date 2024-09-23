@@ -3,7 +3,7 @@ package com.winter.ai4j.user.controller;
 import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
-import com.winter.ai4j.user.model.entity.UserPO;
+import com.winter.ai4j.user.model.dto.UserDTO;
 import com.winter.ai4j.user.service.UserService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +36,7 @@ public class UserController {
      * */
     @ApiOperation(value = "login", notes = "login")
     @PostMapping(value = "/login")
-    public SaResult login(@RequestBody UserPO req) {
+    public SaResult login(@RequestBody UserDTO req) {
 
         if (StringUtils.isEmpty(req.getPhone()) || StringUtils.isEmpty(req.getPassword())) {
             return SaResult.error("请输入账号密码");

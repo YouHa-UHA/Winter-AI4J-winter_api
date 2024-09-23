@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * ClassName: UserPO
+ * ClassName: UserDTO
  * <blockquote><pre>
  * Description: [描述]
  * </pre></blockquote>

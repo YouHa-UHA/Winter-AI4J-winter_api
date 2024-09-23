@@ -13,12 +13,14 @@ import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.service.ChatService;
+import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
+import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -28,6 +30,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -131,7 +134,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * 进行会话
      * */
     @Override
-    public String question(SseEmitter emitter, QuestionDTO question) {
+    public String question(SseEmitter emitter, QuestionDTO question, UserDTO user) {
 
         ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
 
@@ -153,7 +156,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         CozeQueReq cozeQueReq = CozeQueReq.builder()
                 .bot_id(apiKeyPO.getAgentId())
-                .user_id("123456789")
+                .user_id(user.getPhone())
                 .stream(true)
                 .auto_save_history(true)
                 .additional_messages(additionalMessages)
@@ -167,7 +170,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .post(requestBody).build();
 
         // 进行连接与消息的接收，传入请求与监听器
-        RealEventSource realEventSource = new RealEventSource(request, new CozeEventSourceListener(question, emitter));
+        RealEventSource realEventSource = new RealEventSource(request, new CozeEventSourceListener(user, question, emitter));
         realEventSource.connect(HTTP_CLIENT);
         return null;
     }
@@ -178,10 +181,12 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     * */
     public class CozeEventSourceListener extends EventSourceListener {
 
+        private final UserDTO user;
         private final QuestionDTO question;
         private SseEmitter emitter;
 
-        public CozeEventSourceListener(QuestionDTO question, SseEmitter emitter) {
+        public CozeEventSourceListener(UserDTO user, QuestionDTO question, SseEmitter emitter) {
+            this.user = user;
             this.question = question;
             this.emitter = emitter;
         }
@@ -227,6 +232,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         @Override
         public void onClosed(EventSource eventSource) {
+            closeEventDataToUser(emitter, question);
             eventSource.cancel();
         }
 
@@ -245,6 +251,46 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             emitter.send(SseEmitter.event().data(message));
         } catch (IOException e) {
             eventSource.cancel();
+        }
+    }
+
+    /*
+    * 关闭消息
+    * */
+    public void closeEventDataToUser(SseEmitter emitter, QuestionDTO question) {
+        String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
+        String chatId = question.getChatId();
+        try {
+            ChatVO chatVO = ChatVO.builder().isFinish(true).userId(null).answer("").chatId(chatId).date(formatted).build();
+            String sendData = JSON.toJSONString(chatVO);
+            // 判断emitter对象是否还在链接
+            if (!isSseEmitterComplete(emitter)) {
+                emitter.send(SseEmitter.event().data(sendData));
+            }
+        } catch (IOException e) {
+            log.error("主机中止连接情况[模型端结束服务，响应结束时，用户也结束了服务] ===> {}", chatId);
+        } finally {
+            if (!isSseEmitterComplete(emitter)) {
+                emitter.complete();
+            }
+            // String lockKey = "BlockingsseEmitterLockKey_" + chartId;
+            // RLock lock = redissonClient.getLock(lockKey);
+            // lock.forceUnlock();
+        }
+
+    }
+
+
+    /*
+    * SseEmitter是否完成
+    * */
+    public boolean isSseEmitterComplete(SseEmitter sseEmitter) {
+        try {
+            Field completeField = sseEmitter.getClass().getSuperclass().getDeclaredField("complete");
+            completeField.setAccessible(true);
+            return (boolean) completeField.get(sseEmitter);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            return false;
         }
     }
 

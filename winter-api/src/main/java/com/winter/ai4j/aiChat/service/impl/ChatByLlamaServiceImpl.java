@@ -8,6 +8,7 @@ import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.service.ChatService;
+import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
@@ -115,7 +116,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
      * 进行会话
      * */
     @Override
-    public String question(SseEmitter emitter, QuestionDTO question) {
+    public String question(SseEmitter emitter, QuestionDTO question, UserDTO user) {
         // 创建OkHttpClient对象用于发送请求
         OkHttpClient httpClient = new OkHttpClient.Builder()
                 .readTimeout(180, TimeUnit.SECONDS)
