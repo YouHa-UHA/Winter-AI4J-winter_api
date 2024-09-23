@@ -100,19 +100,22 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         try (Response execute = HTTP_CLIENT.newCall(request).execute()) {
             if (execute.isSuccessful()) {
                 String responseString = null;
+                // TODO 优化
                 if (execute.body() != null) {
                     responseString = execute.body().string();
                 }
+
                 // TypeReference是fastjson提供的一个类，用于实现泛型的反序列化。
                 CozeRes<CozeCreateRes> cozeRes = JSON.parseObject
                         (responseString, new TypeReference<CozeRes<CozeCreateRes>>() {});
                 log.info("创建会话成功:{}", cozeRes);
                 // Optional.ofNullable(T t) 方法的作用是判断t是否为null，
-                // 中间任何一步为空都会返回一个空的Optional对象，不会抛出空指针异常。
+                // 中间任何一步为空都会返回一个空的Optional对象，不会抛出空指针异常
                 return Optional.ofNullable(cozeRes)
                         .map(CozeRes::getData)
                         .map(CozeCreateRes::getId)
                         .orElse(null);
+
             }else{
                 log.error("创建会话失败:{}", execute.body().string());
                 return null;
@@ -144,8 +147,10 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .content(question.getQuestion())
                 .content_type("text")
                 .build();
+
         List<CozeQueReq.CozeQueReqMessage> additionalMessages = new ArrayList<>();
         additionalMessages.add(cozeQueReqMessage);
+
         CozeQueReq cozeQueReq = CozeQueReq.builder()
                 .bot_id(apiKeyPO.getAgentId())
                 .user_id("123456789")
@@ -153,6 +158,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .auto_save_history(true)
                 .additional_messages(additionalMessages)
                 .build();
+
         RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq), MediaType.parse("application/json"));
 
         Request request = new Request.Builder().url(apiKeyPO.getUrl() + "?conversation_id=" + question.getChatId())

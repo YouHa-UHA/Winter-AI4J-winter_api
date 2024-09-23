@@ -25,10 +25,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Api(tags = "Coze模块")
+@Api(tags = "Chat模块")
 @Slf4j
 @RestController
-@RequestMapping(value = "/system/chat")
+@RequestMapping(value = "/winter/chat")
 public class ChatController {
 
     @Autowired
