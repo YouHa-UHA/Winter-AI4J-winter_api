@@ -166,7 +166,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .additional_messages(additionalMessages)
                 .build();
 
-        RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq), MediaType.parse("application/json"));
+        RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq)
+                , MediaType.parse("application/json"));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiKeyPO.getUrl());
         builder.queryParam("conversation_id", question.getChatId());
@@ -178,7 +179,9 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .post(requestBody).build();
 
         // 进行连接与消息的接收，传入请求与监听器
-        RealEventSource realEventSource = new RealEventSource(request, new CozeEventSourceListener(user, question, emitter));
+        RealEventSource realEventSource = new RealEventSource
+                (request, new CozeEventSourceListener(user, question, emitter));
+
         realEventSource.connect(HTTP_CLIENT);
         return null;
     }
@@ -269,7 +272,13 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
         String chatId = question.getChatId();
         try {
-            ChatVO chatVO = ChatVO.builder().isFinish(true).userId(null).answer("").chatId(chatId).date(formatted).build();
+            ChatVO chatVO = ChatVO.builder()
+                    .isFinish(true)
+                    .userId(null)
+                    .answer("")
+                    .chatId(chatId)
+                    .date(formatted)
+                    .build();
             String sendData = JSON.toJSONString(chatVO);
             // 判断emitter对象是否还在链接
             if (!isSseEmitterComplete(emitter)) {
