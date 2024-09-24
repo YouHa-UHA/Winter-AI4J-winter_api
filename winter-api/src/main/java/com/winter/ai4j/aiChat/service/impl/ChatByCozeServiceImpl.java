@@ -27,10 +27,14 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -164,7 +168,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq), MediaType.parse("application/json"));
 
-        Request request = new Request.Builder().url(apiKeyPO.getUrl() + "?conversation_id=" + question.getChatId())
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiKeyPO.getUrl());
+        builder.queryParam("conversation_id", question.getChatId());
+        String urlWithParams = builder.build().encode().toUri().toString();
+
+        Request request = new Request.Builder().url(urlWithParams)
                 .addHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
                 .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyPO.getModelKey())
                 .post(requestBody).build();
