@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
+import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -186,6 +187,11 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
         RealEventSource realEventSource = new RealEventSource(request, sseListener);
         // 连接服务器
         realEventSource.connect(httpClient);
+        return null;
+    }
+
+    @Override
+    public FollowVO getFollow(QuestionDTO questionDTO) {
         return null;
     }
 

@@ -12,6 +12,7 @@ import com.winter.ai4j.aiChat.model.coze.CozeRes;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
+import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
-import org.redisson.api.RLock;
+import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -28,13 +29,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.springframework.web.util.UriUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -73,7 +71,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         apiKeyPOLambdaQueryWrapper.eq(ApiKeyPO::getModelIndex, "coze");
         this.list(apiKeyPOLambdaQueryWrapper).forEach(apiKeyPO -> apiKeys.put(apiKeyPO.getAppIndex(), apiKeyPO));
         log.info("初始化 ===> Coze模型信息载入...");
-        //增加判空，避免接口错误
+        // 增加判空，避免接口错误
         if (apiKeys.isEmpty()) {
             log.error("初始化失败 ===> 无信息读取");
         }
@@ -85,7 +83,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     @Override
     public String createChat() {
         // TODO 后边增加一个全局异常的链接类,直接捕获全局返回模型丢失
-        //增加判空，避免接口错误
+        // 增加判空，避免接口错误
         if (apiKeys.get("ai_coze") == null) {
             log.info("无法找到Coze对应的API Key");
             return "无法找到Coze对应的API Key";
@@ -114,7 +112,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
                 // TypeReference是fastjson提供的一个类，用于实现泛型的反序列化。
                 CozeRes<CozeCreateRes> cozeRes = JSON.parseObject
-                        (responseString, new TypeReference<CozeRes<CozeCreateRes>>() {});
+                        (responseString, new TypeReference<CozeRes<CozeCreateRes>>() {
+                        });
                 log.info("创建会话成功:{}", cozeRes);
                 // Optional.ofNullable(T t) 方法的作用是判断t是否为null，
                 // 中间任何一步为空都会返回一个空的Optional对象，不会抛出空指针异常
@@ -123,7 +122,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .map(CozeCreateRes::getId)
                         .orElse(null);
 
-            }else{
+            } else {
                 log.error("创建会话失败:{}", execute.body().string());
                 return null;
             }
@@ -186,10 +185,23 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         return null;
     }
 
+    /*
+    * 获取联想回答
+    * */
+    @Override
+    public FollowVO getFollow(QuestionDTO question) {
+        String chartId = question.getChatId();
+        RList<String> list = redissonClient.getList("chat_follow:" + chartId);
+        int size = list.size();
+        List<String> safeSubList = new ArrayList<>(list.subList(Math.max(size - 3, 0), size));
+        list.clear();
+        return FollowVO.builder().answer(chartId).follow(safeSubList).build();
+    }
+
 
     /*
-    * 监听器
-    * */
+     * 监听器
+     * */
     public class CozeEventSourceListener extends EventSourceListener {
 
         private final UserDTO user;
@@ -233,6 +245,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 sendEventDataToUser(emitter, eventSource, sendData);
             }
             if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeResponseWrapper.getType())) {
+                RList<String> list = redissonClient.getList("chat_follow:" + chatId);
+                list.add(cozeResponseWrapper.getContent());
                 // 联想问题
             }
             if ("conversation.message.completed".equals(type) && "answer".equals(cozeResponseWrapper.getType())) {
@@ -254,8 +268,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     }
 
     /*
-    * 发送消息
-    * */
+     * 发送消息
+     * */
     public void sendEventDataToUser(SseEmitter emitter, EventSource eventSource, String message) {
         try {
             // 发送消息
@@ -266,8 +280,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     }
 
     /*
-    * 关闭消息
-    * */
+     * 关闭消息
+     * */
     public void closeEventDataToUser(SseEmitter emitter, QuestionDTO question) {
         String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
         String chatId = question.getChatId();
@@ -299,8 +313,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
 
     /*
-    * SseEmitter是否完成
-    * */
+     * SseEmitter是否完成
+     * */
     public boolean isSseEmitterComplete(SseEmitter sseEmitter) {
         try {
             Field completeField = sseEmitter.getClass().getSuperclass().getDeclaredField("complete");
