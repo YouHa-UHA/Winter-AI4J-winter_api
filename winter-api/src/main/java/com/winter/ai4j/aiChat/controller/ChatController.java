@@ -85,24 +85,30 @@ public class ChatController {
         // lock.lock(100, TimeUnit.SECONDS);
 
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        UserDTO userDTO = new UserDTO();
-        userDTO.setPhone(userId);
+        // TODO 对于未登录的处理
+        UserDTO userDTO = UserDTO.builder().phone(userId).build();
+
+
+        // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
+        SseEmitter emitter = new SseEmitter(1800000L);
+        emitter.onCompletion(() -> {});
+        emitter.onTimeout(() -> {});
+
 
         // 处理未正常提供chatId的情况
         try {
             if (StringUtils.isEmpty(question.getChatId())) {
-                SseEmitter emitter = new SseEmitter();
                 String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
-                ChatVO chatVO = ChatVO.builder().isFinish(true).userId(null)
+                // 构造并反馈提示
+                ChatVO chatVO = ChatVO.builder().isFinish(false).userId(null)
                         .answer("请正确创建提问并刷新网页").chatId(null).date(formatted)
                         .build();
                 String sendData = JSON.toJSONString(chatVO);
                 emitter.send(SseEmitter.event().data(sendData));
-
-                // chatVO.setIsFinish(true);
-                // sendData = JSON.toJSONString(chatVO);
-                // emitter.send(SseEmitter.event().data(sendData));
-
+                // 结束
+                chatVO.setIsFinish(true);
+                sendData = JSON.toJSONString(chatVO);
+                emitter.send(SseEmitter.event().data(sendData));
                 emitter.complete();
                 return emitter;
             }
@@ -110,11 +116,12 @@ public class ChatController {
             throw new RuntimeException(e);
         }
 
-        // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
-        SseEmitter emitter = new SseEmitter(1800000L);
-        emitter.onCompletion(() -> {});
-        emitter.onTimeout(() -> {});
-        String question1 = chatByCoseService.question(emitter, question, userDTO);
+        // 处理未正常提供问题的情况
+        if (!StringUtils.hasText(question.getQuestion())) {
+            question.setQuestion("你好，请介绍一下自己吧。并告诉我，你可以做什么？");
+        }
+
+        String answer = chatByCoseService.question(emitter, question, userDTO);
         // chatByLlamaService.questionDTO(emitter); // ollama 存在问题，先不要用
         return emitter;
     }

@@ -265,6 +265,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         public void onFailure(EventSource eventSource, Throwable t, Response response) {
 
         }
+
     }
 
     /*
