@@ -18,6 +18,7 @@ import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.user.model.dto.UserDTO;
+import com.winter.ai4j.user.model.entity.UserPO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
@@ -243,10 +244,10 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
             if ("conversation.message.delta".equals(type)) {
                 ChatVO chatVO = ChatVO.builder()
+                        .chatId(chatId)
                         .isFinish(false)
                         .userId(null)
                         .answer(cozeQueRes.getContent())
-                        .chatId(chatId)
                         .date(formatted)
                         .build();
                 String sendData = JSON.toJSONString(chatVO);
@@ -283,13 +284,29 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         @Override
         public void onClosed(EventSource eventSource) {
+            // 关闭消息
             closeEventToUser(emitter, question);
             eventSource.cancel();
         }
 
         @Override
         public void onFailure(EventSource eventSource, Throwable t, Response response) {
-
+            RList<String> chatHistorySemi = redissonClient.getList("chat_his:" + question.getChatId());
+            String result = String.join("", chatHistorySemi);
+            chatHistorySemi.clear();
+            eventSource.cancel();
+            if (!isSseEmitterComplete(emitter)) {
+                ChatHisPO chatHisPO = ChatHisPO.builder()
+                        .role("assistant")
+                        .type("answer")
+                        .content(result + " \n系统繁忙，请您稍后重试，感谢您的耐心等待")
+                        .contentType("text")
+                        .ifLike("0")
+                        .chatHisId(String.valueOf(System.currentTimeMillis())).build();
+                String answerJson = JSON.toJSONString(chatHisPO);
+                redissonClient.getList("user_his:" + question.getChatId()).add(answerJson);
+                closeEventByModel(emitter, question, user);
+            }
         }
 
     }
@@ -322,6 +339,37 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         }
     }
 
+    /*
+    * 模型端意外关闭
+    * */
+    public void closeEventByModel(SseEmitter emitter, QuestionDTO question, UserDTO userDTO) {
+        String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
+        String chatId = question.getChatId();
+        try {
+            // 构造并反馈提示
+            ChatVO chatVO = ChatVO.builder()
+                    .isFinish(false)
+                    .userId(null)
+                    .answer(" \n系统繁忙，请您稍后重试，感谢您的耐心等待")
+                    .chatId(chatId)
+                    .date(formatted).build();
+            String sendData = JSON.toJSONString(chatVO);
+            emitter.send(SseEmitter.event().data(sendData));
+            // 结束
+            chatVO.setIsFinish(true);
+            sendData = JSON.toJSONString(chatVO);
+            emitter.send(SseEmitter.event().data(sendData));
+            log.error("主机中止连接情况[模型服务关闭了链接] ===> {}", userDTO.getPhone());
+        } catch (IOException e) {
+            log.error("主机中止连接情况[模型服务关闭连接后，后台还未处理，用户也恰好关闭了链接] ===> {}", chatId);
+        } finally {
+            emitter.complete();
+            // String lockKey = "BlockingsseEmitterLockKey_" + chatId;
+            // RLock lock = redissonClient.getLock(lockKey);
+            // lock.forceUnlock();
+        }
+    }
+
 
     /*
     * 用户关闭
@@ -336,11 +384,14 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
 
     /*
-    * 关闭对话（主动请求coze）
+    * 关闭对话请求（主动请求coze）
     * */
     public boolean closeCoze(CozeQueRes cozeQueRes) {
-        OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS).connectTimeout(60, TimeUnit.SECONDS).build();
+        OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .build();
         Gson gson = new Gson();
         JsonObject body = new JsonObject();
         body.addProperty("chat_id", cozeQueRes.getChatId());
@@ -366,7 +417,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
 
     /*
-     * 关闭消息
+     * 正常关闭消息
      * */
     public void closeEventToUser(SseEmitter emitter, QuestionDTO question) {
         String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
