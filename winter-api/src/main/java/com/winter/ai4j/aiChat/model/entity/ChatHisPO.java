@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * ClassName: ChatPO
+ * ClassName: ChatHisPO
  * <blockquote><pre>
  * Description: [聊天历史]
  * </pre></blockquote>
@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ChatPO {
+public class ChatHisPO {
 
     @JSONField(name = "role")
     String role;

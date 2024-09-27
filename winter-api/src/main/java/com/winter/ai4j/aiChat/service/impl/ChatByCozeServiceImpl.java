@@ -4,6 +4,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
 import com.winter.ai4j.aiChat.model.coze.CozeCreateRes;
 import com.winter.ai4j.aiChat.model.coze.CozeQueReq;
@@ -11,7 +13,7 @@ import com.winter.ai4j.aiChat.model.coze.CozeQueRes;
 import com.winter.ai4j.aiChat.model.coze.CozeRes;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
-import com.winter.ai4j.aiChat.model.entity.ChatPO;
+import com.winter.ai4j.aiChat.model.entity.ChatHisPO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
@@ -23,6 +25,7 @@ import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
+import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -63,6 +66,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     // 存储appKey
     private Map<String, ApiKeyPO> apiKeys;
 
+    String API_KEY;
+
     // 启动执行注解
     @PostConstruct
     public void init() {
@@ -76,6 +81,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         if (apiKeys.isEmpty()) {
             log.error("初始化失败 ===> 无信息读取");
         }
+        API_KEY = apiKeys.get("ai_coze").getModelKey();
     }
 
     /*
@@ -231,7 +237,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 return;
             }
 
-            CozeQueRes cozeResponseWrapper = JSON.parseObject(data, CozeQueRes.class);
+            CozeQueRes cozeQueRes = JSON.parseObject(data, CozeQueRes.class);
             String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
             String chatId = question.getChatId();
 
@@ -239,7 +245,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 ChatVO chatVO = ChatVO.builder()
                         .isFinish(false)
                         .userId(null)
-                        .answer(cozeResponseWrapper.getContent())
+                        .answer(cozeQueRes.getContent())
                         .chatId(chatId)
                         .date(formatted)
                         .build();
@@ -247,37 +253,37 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
                 // 中间过程载入redis
                 RList<String> chatHistorySemi = redissonClient.getList("chat_intermediate:" + chatId);
-                chatHistorySemi.add(cozeResponseWrapper.getContent());
+                chatHistorySemi.add(cozeQueRes.getContent());
 
-                sendEventDataToUser(emitter, eventSource, sendData);
+                sendEventDataToUser(emitter, eventSource, sendData, chatId, cozeQueRes);
             }
-            if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeResponseWrapper.getType())) {
+            if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeQueRes.getType())) {
                 // 联想问题载入redis
                 RList<String> list = redissonClient.getList("chat_follow:" + chatId);
-                list.add(cozeResponseWrapper.getContent());
+                list.add(cozeQueRes.getContent());
             }
-            if ("conversation.message.completed".equals(type) && "answer".equals(cozeResponseWrapper.getType())) {
+            if ("conversation.message.completed".equals(type) && "answer".equals(cozeQueRes.getType())) {
                 // 最后一次是完整会话，所以可以不用中间过程，直接清空
                 RList<String> chatHistorySemi = redissonClient.getList("chat_intermediate:" + chatId);
                 chatHistorySemi.clear();
-                String result = cozeResponseWrapper.getContent();
-                ChatPO chatPO = ChatPO.builder()
+                String result = cozeQueRes.getContent();
+                ChatHisPO chatHisPO = ChatHisPO.builder()
                         .role("assistant")
                         .type("answer")
                         .content(result)
                         .contentType("text")
                         .ifLike("0")
                         .chatHisId(String.valueOf(System.currentTimeMillis())).build();
-                String answerJson = JSON.toJSONString(chatPO);
+                String answer = JSON.toJSONString(chatHisPO);
                 // 维护历史记录
-                redissonClient.getList("user_his:" + chatId).add(answerJson);
+                redissonClient.getList("user_his:" + chatId).add(answer);
             }
 
         }
 
         @Override
         public void onClosed(EventSource eventSource) {
-            closeEventDataToUser(emitter, question);
+            closeEventToUser(emitter, question);
             eventSource.cancel();
         }
 
@@ -291,19 +297,78 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     /*
      * 发送消息
      * */
-    public void sendEventDataToUser(SseEmitter emitter, EventSource eventSource, String message) {
+    public void sendEventDataToUser(SseEmitter emitter, EventSource eventSource, String message, String chatId, CozeQueRes cozeQueRes) {
         try {
             // 发送消息
             emitter.send(SseEmitter.event().data(message));
         } catch (IOException e) {
+            log.error("主机中止连接情况[用户中止了链接，导致发送失败]");
+            // 清空中间历史
+            RList<String> chatHistorySemi = redissonClient.getList("chat_intermediate:" + chatId);
+            String result = String.join("", chatHistorySemi);
+            chatHistorySemi.clear();
+            ChatHisPO chatHisPO = ChatHisPO.builder()
+                    .role("assistant")
+                    .type("answer")
+                    .content(result)
+                    .contentType("text")
+                    .ifLike("0")
+                    .chatHisId(String.valueOf(System.currentTimeMillis())).build();
+            String answerJson = JSON.toJSONString(chatHisPO);
+            // 维护历史记录
+            redissonClient.getList("user_his:" + chatId).add(answerJson);
+            closeEventByUser(chatId, cozeQueRes);
             eventSource.cancel();
         }
     }
 
+
+    /*
+    * 用户关闭
+    * */
+    public void closeEventByUser(String chatId, CozeQueRes cozeQueRes) {
+        // 主动请求关闭链接
+        boolean b = closeCoze(cozeQueRes);
+        // String lockKey = "BlockingsseEmitterLockKey_" + chatId;
+        // RLock lock = redissonClient.getLock(lockKey);
+        // lock.forceUnlock();
+    }
+
+
+    /*
+    * 关闭对话（主动请求coze）
+    * */
+    public boolean closeCoze(CozeQueRes cozeQueRes) {
+        OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS).connectTimeout(60, TimeUnit.SECONDS).build();
+        Gson gson = new Gson();
+        JsonObject body = new JsonObject();
+        body.addProperty("chat_id", cozeQueRes.getChatId());
+        body.addProperty("conversation_id", cozeQueRes.getConversationId());
+        RequestBody requestBody = RequestBody.create(gson.toJson(body),
+                MediaType.parse("application/json"));
+        Request request = new Request.Builder().url("https://api.coze.cn/v3/chat/cancel")
+                .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Bearer " + API_KEY).build();
+        // TODO 这个API_KEY要优化，改成直接从这里获取，以后要作为传入值放进来
+        try {
+            Response response = HTTP_CLIENT.newCall(request).execute();
+            if (!response.isSuccessful()) {
+                return true;
+            }
+        } catch (IOException e) {
+            log.error("取消对话失败:{}", e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+
     /*
      * 关闭消息
      * */
-    public void closeEventDataToUser(SseEmitter emitter, QuestionDTO question) {
+    public void closeEventToUser(SseEmitter emitter, QuestionDTO question) {
         String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
         String chatId = question.getChatId();
         try {
