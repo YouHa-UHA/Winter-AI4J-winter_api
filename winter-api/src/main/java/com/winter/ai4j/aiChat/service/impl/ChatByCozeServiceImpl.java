@@ -11,6 +11,7 @@ import com.winter.ai4j.aiChat.model.coze.CozeQueRes;
 import com.winter.ai4j.aiChat.model.coze.CozeRes;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
+import com.winter.ai4j.aiChat.model.entity.ChatPO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
@@ -220,6 +221,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         @Override
         public void onEvent(@NotNull EventSource eventSource, String id, String type, @NotNull String data) {
+
             // 判断消息类型(这是coze的约定)
             if ("error".equals(type)) {
                 onFailure(eventSource, new RuntimeException("error"), null);
@@ -232,25 +234,43 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             CozeQueRes cozeResponseWrapper = JSON.parseObject(data, CozeQueRes.class);
             String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
             String chatId = question.getChatId();
+
             if ("conversation.message.delta".equals(type)) {
-                String answerContent = cozeResponseWrapper.getContent();
                 ChatVO chatVO = ChatVO.builder()
                         .isFinish(false)
                         .userId(null)
-                        .answer(answerContent)
+                        .answer(cozeResponseWrapper.getContent())
                         .chatId(chatId)
                         .date(formatted)
                         .build();
                 String sendData = JSON.toJSONString(chatVO);
+
+                // 中间过程载入redis
+                RList<String> chatHistorySemi = redissonClient.getList("chat_intermediate:" + chatId);
+                chatHistorySemi.add(cozeResponseWrapper.getContent());
+
                 sendEventDataToUser(emitter, eventSource, sendData);
             }
             if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeResponseWrapper.getType())) {
+                // 联想问题载入redis
                 RList<String> list = redissonClient.getList("chat_follow:" + chatId);
                 list.add(cozeResponseWrapper.getContent());
-                // 联想问题
             }
             if ("conversation.message.completed".equals(type) && "answer".equals(cozeResponseWrapper.getType())) {
-                // 结束会话
+                // 最后一次是完整会话，所以可以不用中间过程，直接清空
+                RList<String> chatHistorySemi = redissonClient.getList("chat_intermediate:" + chatId);
+                chatHistorySemi.clear();
+                String result = cozeResponseWrapper.getContent();
+                ChatPO chatPO = ChatPO.builder()
+                        .role("assistant")
+                        .type("answer")
+                        .content(result)
+                        .contentType("text")
+                        .ifLike("0")
+                        .chatHisId(String.valueOf(System.currentTimeMillis())).build();
+                String answerJson = JSON.toJSONString(chatPO);
+                // 维护历史记录
+                redissonClient.getList("user_his:" + chatId).add(answerJson);
             }
 
         }
