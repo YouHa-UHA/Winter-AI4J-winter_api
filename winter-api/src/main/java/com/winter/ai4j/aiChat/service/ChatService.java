@@ -3,10 +3,13 @@ package com.winter.ai4j.aiChat.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
+import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import com.winter.ai4j.user.model.entity.UserPO;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
 
 /**
  * ClassName: ChatService
@@ -41,5 +44,12 @@ public interface ChatService extends IService<ApiKeyPO> {
      * @return FollowVO
      */
     FollowVO getFollow(QuestionDTO question);
+
+    /**
+     * 查询历史记录
+     * @param
+     * @return List<ChatHisVO>
+     */
+    List<ChatHisVO> queryHistory(String chartId, String userId);
 
 }
