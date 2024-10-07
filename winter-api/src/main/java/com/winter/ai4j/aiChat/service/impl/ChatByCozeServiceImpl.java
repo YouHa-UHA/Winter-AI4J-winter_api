@@ -14,11 +14,11 @@ import com.winter.ai4j.aiChat.model.coze.CozeRes;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.entity.ChatHisPO;
+import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.user.model.dto.UserDTO;
-import com.winter.ai4j.user.model.entity.UserPO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
@@ -26,7 +26,6 @@ import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -69,6 +68,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
     String API_KEY;
 
+
     // 启动执行注解
     @PostConstruct
     public void init() {
@@ -84,6 +84,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         }
         API_KEY = apiKeys.get("ai_coze").getModelKey();
     }
+
 
     /*
      * 创建会话
@@ -193,9 +194,10 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         return null;
     }
 
+
     /*
-    * 获取联想回答
-    * */
+     * 获取联想回答
+     * */
     @Override
     public FollowVO getFollow(QuestionDTO question) {
         String chartId = question.getChatId();
@@ -205,6 +207,17 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         list.clear();
         return FollowVO.builder().answer(chartId).follow(safeSubList).build();
     }
+
+
+    /*
+     * 查询历史记录
+     * */
+    @Override
+    public List<ChatHisVO> queryHistory(String chartId, String userId) {
+        return null;
+    }
+
+
 
 
     /*
@@ -311,6 +324,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
     }
 
+
     /*
      * 发送消息
      * */
@@ -339,9 +353,10 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         }
     }
 
+
     /*
-    * 模型端意外关闭
-    * */
+     * 模型端意外关闭
+     * */
     public void closeEventByModel(SseEmitter emitter, QuestionDTO question, UserDTO userDTO) {
         String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
         String chatId = question.getChatId();
@@ -372,8 +387,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
 
     /*
-    * 用户关闭
-    * */
+     * 用户关闭
+     * */
     public void closeEventByUser(String chatId, CozeQueRes cozeQueRes) {
         // 主动请求关闭链接
         boolean b = closeCoze(cozeQueRes);
@@ -384,8 +399,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
 
     /*
-    * 关闭对话请求（主动请求coze）
-    * */
+     * 关闭对话请求（主动请求coze）
+     * */
     public boolean closeCoze(CozeQueRes cozeQueRes) {
         OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
                 .readTimeout(60, TimeUnit.SECONDS)
@@ -461,5 +476,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             return false;
         }
     }
+
+
 
 }
