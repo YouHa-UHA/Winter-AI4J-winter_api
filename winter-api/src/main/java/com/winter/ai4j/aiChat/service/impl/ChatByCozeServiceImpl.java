@@ -271,11 +271,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
                 sendEventDataToUser(emitter, eventSource, sendData, chatId, cozeQueRes);
             }
-            if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeQueRes.getType())) {
-                // 联想问题载入redis
-                RList<String> list = redissonClient.getList("chat_follow:" + chatId);
-                list.add(cozeQueRes.getContent());
-            }
+
             if ("conversation.message.completed".equals(type) && "answer".equals(cozeQueRes.getType())) {
                 // 最后一次是完整会话，所以可以不用中间过程，直接清空
                 RList<String> chatHistorySemi = redissonClient.getList("chat_intermediate:" + chatId);
@@ -291,6 +287,12 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 String answer = JSON.toJSONString(chatHisPO);
                 // 维护历史记录
                 redissonClient.getList("user_his:" + chatId).add(answer);
+            }
+
+            if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeQueRes.getType())) {
+                // 联想问题载入redis
+                RList<String> list = redissonClient.getList("chat_follow:" + chatId);
+                list.add(cozeQueRes.getContent());
             }
 
         }
