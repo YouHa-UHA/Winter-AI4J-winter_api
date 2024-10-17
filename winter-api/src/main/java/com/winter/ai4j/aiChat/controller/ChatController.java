@@ -3,16 +3,15 @@ package com.winter.ai4j.aiChat.controller;
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
+import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.common.result.Result;
 import com.winter.ai4j.user.model.dto.UserDTO;
-import com.winter.ai4j.user.model.entity.UserPO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,7 +25,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 /**
  * ClassName: ChatLlamaController
@@ -59,6 +58,7 @@ public class ChatController {
 
     /**
      * Chat-创建会话
+     *
      * @param userId 用户ID
      * @return 创建chat 结果
      */
@@ -72,6 +72,7 @@ public class ChatController {
 
     /**
      * Chat-进行对话
+     *
      * @param question 问题
      * @return 进行对话结果
      */
@@ -85,19 +86,36 @@ public class ChatController {
         // lock.lock(100, TimeUnit.SECONDS);
 
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        // TODO 对于未登录的处理
-        UserDTO userDTO = UserDTO.builder().phone(userId).build();
-
-
         // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
         SseEmitter emitter = new SseEmitter(1800000L);
-        emitter.onCompletion(() -> {});
-        emitter.onTimeout(() -> {});
+        emitter.onCompletion(() -> {
+        });
+        emitter.onTimeout(() -> {
+        });
 
+        // TODO 未登录处理 优化成直接抛出异常
+        if ("error".equals(userId)) {
+            try {
+                String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
+                ChatVO chatVO = ChatVO.builder().isFinish(false).userId(null)
+                        .answer("您被顶下线或未登录，请回到首页并重新登录").chatId(null).date(formatted)
+                        .build();
+                String sendData = JSON.toJSONString(chatVO);
+                emitter.send(SseEmitter.event().data(sendData));
+                chatVO.setIsFinish(true);
+                sendData = JSON.toJSONString(chatVO);
+                emitter.send(SseEmitter.event().data(sendData));
+            } catch (IOException e) {
+                log.error("===>{}", e.getMessage());
+            }
+            emitter.complete();
+            return emitter;
+        }
 
+        UserDTO userDTO = UserDTO.builder().phone(userId).build();
         // 处理未正常提供chatId的情况
-        try {
-            if (StringUtils.isEmpty(question.getChatId())) {
+        if (!StringUtils.hasText(question.getChatId())) {
+            try {
                 String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
                 // 构造并反馈提示
                 ChatVO chatVO = ChatVO.builder().isFinish(false).userId(null)
@@ -111,9 +129,9 @@ public class ChatController {
                 emitter.send(SseEmitter.event().data(sendData));
                 emitter.complete();
                 return emitter;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
 
         // 处理未正常提供问题的情况
@@ -129,6 +147,7 @@ public class ChatController {
 
     /**
      * Chat-联系问题
+     *
      * @param question 用户ID
      * @return 联系问题结果
      */
@@ -140,6 +159,21 @@ public class ChatController {
     }
 
 
+
+    /**
+     * Chat-查询对话历史
+     *
+     * @param question 用户ID
+     * @return 查询对话历史结果
+     */
+    @ApiOperation(value = "FoxAI-查询对话历史", notes = "FoxAI-查询对话历史")
+    @PostMapping(value = "/query")
+    public Result<List<ChatHisVO>> query(@RequestBody QuestionDTO question) {
+        String userId = StpUtil.getLoginIdAsString();
+        String chatId = question.getChatId();
+        List<ChatHisVO> result = chatByCoseService.queryHistory(chatId, userId);
+        return Result.ok(result);
+    }
 
 
 }
