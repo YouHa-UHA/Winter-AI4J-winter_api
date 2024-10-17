@@ -42,7 +42,7 @@ public class ChatVO implements Serializable {
     @JSONField(name = "date")
     String date;
 
-    @ApiModelProperty(value = "状态码")
+    @ApiModelProperty(value = "唯一标识")
     @JSONField(name = "code")
     Integer code;
 

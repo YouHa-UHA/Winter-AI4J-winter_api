@@ -7,7 +7,10 @@ import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
+import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
+import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
+import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
@@ -22,6 +25,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -115,7 +119,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
      * 进行会话
      * */
     @Override
-    public String question(SseEmitter emitter, QuestionDTO question) {
+    public String question(SseEmitter emitter, QuestionDTO question, UserDTO user) {
         // 创建OkHttpClient对象用于发送请求
         OkHttpClient httpClient = new OkHttpClient.Builder()
                 .readTimeout(180, TimeUnit.SECONDS)
@@ -185,6 +189,16 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
         RealEventSource realEventSource = new RealEventSource(request, sseListener);
         // 连接服务器
         realEventSource.connect(httpClient);
+        return null;
+    }
+
+    @Override
+    public FollowVO getFollow(QuestionDTO questionDTO) {
+        return null;
+    }
+
+    @Override
+    public List<ChatHisVO> queryHistory(String chatId, String userId) {
         return null;
     }
 

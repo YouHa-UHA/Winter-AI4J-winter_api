@@ -1,18 +1,31 @@
 package com.winter.ai4j.aiChat.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
+import com.alibaba.fastjson2.JSON;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
+import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
+import com.winter.ai4j.aiChat.model.vo.ChatVO;
+import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.common.result.Result;
+import com.winter.ai4j.user.model.dto.UserDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * ClassName: ChatLlamaController
@@ -25,10 +38,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Api(tags = "Coze模块")
+@Api(tags = "Chat模块")
 @Slf4j
 @RestController
-@RequestMapping(value = "/system/chat")
+@RequestMapping(value = "/winter/chat")
 public class ChatController {
 
     @Autowired
@@ -39,9 +52,13 @@ public class ChatController {
     @Qualifier("chatByLlamaServiceImpl")
     private ChatService chatByLlamaService;
 
+    @Autowired
+    private RedissonClient redissonClient;
+
 
     /**
-     * Coze-创建会话
+     * Chat-创建会话
+     *
      * @param userId 用户ID
      * @return 创建chat 结果
      */
@@ -54,24 +71,109 @@ public class ChatController {
 
 
     /**
-     * Coze-进行对话
+     * Chat-进行对话
+     *
+     * @param question 问题
      * @return 进行对话结果
      */
     @ApiOperation(value = "chat-进行对话", notes = "进行对话")
     @PostMapping(value = "/question")
     public SseEmitter chatByCoze(@RequestBody QuestionDTO question) {
-        // TODO 后期载入分布式锁，防止用户发起多次提问
 
+        // TODO 后期载入分布式锁，防止用户发起多次提问
+        // String lockKey = "ChatSSELock:" + question.getChatId();
+        // RLock lock = redissonClient.getLock(lockKey);
+        // lock.lock(100, TimeUnit.SECONDS);
+
+        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
         // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
         SseEmitter emitter = new SseEmitter(1800000L);
-        emitter.onCompletion(() -> {});
-        emitter.onTimeout(() -> {});
-        chatByCoseService.question(emitter, question);
+        emitter.onCompletion(() -> {
+        });
+        emitter.onTimeout(() -> {
+        });
+
+        // TODO 未登录处理 优化成直接抛出异常
+        if ("error".equals(userId)) {
+            try {
+                String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
+                ChatVO chatVO = ChatVO.builder().isFinish(false).userId(null)
+                        .answer("您被顶下线或未登录，请回到首页并重新登录").chatId(null).date(formatted)
+                        .build();
+                String sendData = JSON.toJSONString(chatVO);
+                emitter.send(SseEmitter.event().data(sendData));
+                chatVO.setIsFinish(true);
+                sendData = JSON.toJSONString(chatVO);
+                emitter.send(SseEmitter.event().data(sendData));
+            } catch (IOException e) {
+                log.error("===>{}", e.getMessage());
+            }
+            emitter.complete();
+            return emitter;
+        }
+
+        UserDTO userDTO = UserDTO.builder().phone(userId).build();
+        // 处理未正常提供chatId的情况
+        if (!StringUtils.hasText(question.getChatId())) {
+            try {
+                String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
+                // 构造并反馈提示
+                ChatVO chatVO = ChatVO.builder().isFinish(false).userId(null)
+                        .answer("请正确创建提问并刷新网页").chatId(null).date(formatted)
+                        .build();
+                String sendData = JSON.toJSONString(chatVO);
+                emitter.send(SseEmitter.event().data(sendData));
+                // 结束
+                chatVO.setIsFinish(true);
+                sendData = JSON.toJSONString(chatVO);
+                emitter.send(SseEmitter.event().data(sendData));
+                emitter.complete();
+                return emitter;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // 处理未正常提供问题的情况
+        if (!StringUtils.hasText(question.getQuestion())) {
+            question.setQuestion("你好，请介绍一下自己吧。并告诉我，你可以做什么？");
+        }
+
+        String answer = chatByCoseService.question(emitter, question, userDTO);
         // chatByLlamaService.questionDTO(emitter); // ollama 存在问题，先不要用
         return emitter;
     }
 
 
+    /**
+     * Chat-联系问题
+     *
+     * @param question 用户ID
+     * @return 联系问题结果
+     */
+    @ApiOperation(value = "chat-联系问题", notes = "联系问题")
+    @PostMapping(value = "/follow")
+    public Result<FollowVO> follow(@RequestBody QuestionDTO question) {
+        FollowVO follow = chatByCoseService.getFollow(question);
+        return Result.ok(follow);
+    }
+
+
+
+    /**
+     * Chat-查询对话历史
+     *
+     * @param question 用户ID
+     * @return 查询对话历史结果
+     */
+    @ApiOperation(value = "FoxAI-查询对话历史", notes = "FoxAI-查询对话历史")
+    @PostMapping(value = "/query")
+    public Result<List<ChatHisVO>> query(@RequestBody QuestionDTO question) {
+        String userId = StpUtil.getLoginIdAsString();
+        String chatId = question.getChatId();
+        List<ChatHisVO> result = chatByCoseService.queryHistory(chatId, userId);
+        return Result.ok(result);
+    }
 
 
 }
