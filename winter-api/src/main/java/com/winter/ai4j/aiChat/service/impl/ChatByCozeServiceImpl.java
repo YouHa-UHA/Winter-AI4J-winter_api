@@ -150,36 +150,44 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
 
+        // 记录问题历史内容
+        String chatId = question.getChatId();
+        RList<String> chatHistoryString = redissonClient.getList("chat_his:" + chatId);
+        ChatHisPO chatHisPO = ChatHisPO.builder()
+                .role("user")
+                .type("question")
+                .content(question.getQuestion())
+                .contentType("text")
+                .ifLike("0")
+                .chatHisId(String.valueOf(System.currentTimeMillis())).build();
+        String questionJson = JSON.toJSONString(chatHisPO);
+        chatHistoryString.add(questionJson);
+
+        // 创建一个OkHttpClient对象
         OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
                 .readTimeout(180, TimeUnit.SECONDS)
                 .writeTimeout(180, TimeUnit.SECONDS)
                 .connectTimeout(180, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true).build();
 
+        // 构造请求体
         CozeQueReq.CozeQueReqMessage cozeQueReqMessage = CozeQueReq.CozeQueReqMessage.builder()
-                .role("user")
-                .type("question")
-                .content(question.getQuestion())
-                .content_type("text")
-                .build();
-
+                .role("user").type("question").content(question.getQuestion())
+                .content_type("text").build();
         List<CozeQueReq.CozeQueReqMessage> additionalMessages = new ArrayList<>();
         additionalMessages.add(cozeQueReqMessage);
-
         CozeQueReq cozeQueReq = CozeQueReq.builder()
-                .bot_id(apiKeyPO.getAgentId())
-                .user_id(user.getPhone())
-                .stream(true)
-                .auto_save_history(true)
+                .bot_id(apiKeyPO.getAgentId()).user_id(user.getPhone())
+                .stream(true).auto_save_history(true)
                 .additional_messages(additionalMessages)
                 .build();
 
         RequestBody requestBody = RequestBody.create(JSON.toJSONString(cozeQueReq)
                 , MediaType.parse("application/json"));
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiKeyPO.getUrl());
-        builder.queryParam("conversation_id", question.getChatId());
-        String urlWithParams = builder.build().encode().toUri().toString();
+        String urlWithParams = UriComponentsBuilder.fromHttpUrl(apiKeyPO.getUrl())
+                .queryParam("conversation_id", question.getChatId())
+                .build().encode().toUri().toString();
 
         Request request = new Request.Builder().url(urlWithParams)
                 .addHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
@@ -213,10 +221,15 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * 查询历史记录
      * */
     @Override
-    public List<ChatHisVO> queryHistory(String chartId, String userId) {
-        return null;
+    public List<ChatHisVO> queryHistory(String chatId, String userId) {
+        List<ChatHisVO> chartHistories = new ArrayList<>();
+        RList<String> chatHistoryString = redissonClient.getList("chat_his:" + chatId);
+        for (String message : chatHistoryString) {
+            ChatHisVO chatHisVO = JSON.parseObject(message, ChatHisVO.class);
+            chartHistories.add(chatHisVO);
+        }
+        return chartHistories;
     }
-
 
 
 
@@ -257,11 +270,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
             if ("conversation.message.delta".equals(type)) {
                 ChatVO chatVO = ChatVO.builder()
-                        .chatId(chatId)
-                        .isFinish(false)
-                        .userId(null)
-                        .answer(cozeQueRes.getContent())
-                        .date(formatted)
+                        .chatId(chatId).isFinish(false).userId(null)
+                        .answer(cozeQueRes.getContent()).date(formatted)
                         .build();
                 String sendData = JSON.toJSONString(chatVO);
 
@@ -278,14 +288,10 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 chatHistorySemi.clear();
                 String result = cozeQueRes.getContent();
                 ChatHisPO chatHisPO = ChatHisPO.builder()
-                        .role("assistant")
-                        .type("answer")
-                        .content(result)
-                        .contentType("text")
-                        .ifLike("0")
+                        .role("assistant").type("answer").content(result)
+                        .contentType("text").ifLike("0")
                         .chatHisId(String.valueOf(System.currentTimeMillis())).build();
                 String answer = JSON.toJSONString(chatHisPO);
-                // 维护历史记录
                 redissonClient.getList("user_his:" + chatId).add(answer);
             }
 

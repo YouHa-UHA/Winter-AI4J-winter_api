@@ -198,7 +198,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
     }
 
     @Override
-    public List<ChatHisVO> queryHistory(String chartId, String userId) {
+    public List<ChatHisVO> queryHistory(String chatId, String userId) {
         return null;
     }
 
