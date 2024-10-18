@@ -5,7 +5,7 @@ target/
 
 ### IntelliJ IDEA ###
 ### 忽略所有文件夹下的.idea ###
-**/.idea
+.idea
 *.iws
 *.iml
 *.ipr
