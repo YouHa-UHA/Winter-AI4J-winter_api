@@ -1,5 +1,6 @@
 package com.winter.ai4j.aiChat.controller;
 
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -78,7 +80,7 @@ public class ChatController {
      */
     @ApiOperation(value = "chat-进行对话", notes = "进行对话")
     @PostMapping(value = "/question")
-    public SseEmitter chatByCoze(@RequestBody QuestionDTO question) {
+    public SseEmitter chatByCoze(@RequestBody QuestionDTO question) throws LoginException {
 
         // TODO 后期载入分布式锁，防止用户发起多次提问
         // String lockKey = "ChatSSELock:" + question.getChatId();
@@ -86,6 +88,13 @@ public class ChatController {
         // lock.lock(100, TimeUnit.SECONDS);
 
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
+
+
+        if("error".equals(userId)){
+            throw new NotLoginException("未登录", null, null);
+        }
+
+
         // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
         SseEmitter emitter = new SseEmitter(1800000L);
         emitter.onCompletion(() -> {
