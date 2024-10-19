@@ -89,11 +89,10 @@ public class ChatController {
 
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
 
-
+        // TODO 未登录处理 优化成直接抛出异常
         if("error".equals(userId)){
-            throw new NotLoginException("未登录", null, null);
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
         }
-
 
         // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
         SseEmitter emitter = new SseEmitter(1800000L);
@@ -102,7 +101,6 @@ public class ChatController {
         emitter.onTimeout(() -> {
         });
 
-        // TODO 未登录处理 优化成直接抛出异常
         if ("error".equals(userId)) {
             try {
                 String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
