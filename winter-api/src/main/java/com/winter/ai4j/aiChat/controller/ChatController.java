@@ -61,12 +61,11 @@ public class ChatController {
     /**
      * Chat-创建会话
      *
-     * @param userId 用户ID
      * @return 创建chat 结果
      */
     @ApiOperation(value = "chat-创建会话", notes = "创建对话")
     @PostMapping(value = "/create")
-    public Result<String> createCoze(QuestionDTO question) {
+    public Result<String> createCoze() {
         // TODO 未登录处理 优化成直接抛出异常
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
         if("error".equals(userId)){
@@ -147,6 +146,25 @@ public class ChatController {
     public Result<FollowVO> follow(@RequestBody QuestionDTO question) {
         FollowVO follow = chatByCoseService.getFollow(question);
         return Result.ok(follow);
+    }
+
+
+
+    /**
+     * Chat-查询历史列表
+     *
+     * @param question 用户ID
+     * @return 查询对话历史结果
+     */
+    @ApiOperation(value = "FoxAI-查询历史列表", notes = "FoxAI-查询历史列表")
+    @PostMapping(value = "/list")
+    public Result<List<ChatHisVO>> list() {
+        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
+        if("error".equals(userId)){
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
+        }
+        List<ChatHisVO> result = chatByCoseService.listHistory(userId);
+        return Result.ok(result);
     }
 
 

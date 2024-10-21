@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     public SaResult handlerException(NotLoginException e, HttpServletResponse response) {
         response.setStatus(208);
-        return SaResult.error("未登录");
+        return SaResult.error("未登录 或 登录已过期");
     }
 
     @ExceptionHandler(Exception.class)
