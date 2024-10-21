@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ChatListPO {
 
+
     @ApiModelProperty(value = "会话ID")
     @JSONField(name = "chat_id")
     private String chatId;
