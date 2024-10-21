@@ -153,7 +153,6 @@ public class ChatController {
     /**
      * Chat-查询历史列表
      *
-     * @param question 用户ID
      * @return 查询对话历史结果
      */
     @ApiOperation(value = "FoxAI-查询历史列表", notes = "FoxAI-查询历史列表")
