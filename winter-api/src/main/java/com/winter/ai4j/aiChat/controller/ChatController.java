@@ -66,7 +66,12 @@ public class ChatController {
      */
     @ApiOperation(value = "chat-创建会话", notes = "创建对话")
     @PostMapping(value = "/create")
-    public Result<String> createCoze(@RequestBody String userId) {
+    public Result<String> createCoze(QuestionDTO question) {
+        // TODO 未登录处理 优化成直接抛出异常
+        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
+        if("error".equals(userId)){
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
+        }
         String chat = chatByCoseService.createChat();
         return Result.ok(chat);
     }
@@ -80,7 +85,7 @@ public class ChatController {
      */
     @ApiOperation(value = "chat-进行对话", notes = "进行对话")
     @PostMapping(value = "/question")
-    public SseEmitter chatByCoze(@RequestBody QuestionDTO question) throws LoginException {
+    public SseEmitter chatByCoze(@RequestBody QuestionDTO question) {
 
         // TODO 后期载入分布式锁，防止用户发起多次提问
         // String lockKey = "ChatSSELock:" + question.getChatId();
@@ -88,8 +93,6 @@ public class ChatController {
         // lock.lock(100, TimeUnit.SECONDS);
 
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-
-        // TODO 未登录处理 优化成直接抛出异常
         if("error".equals(userId)){
             throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
         }
@@ -100,25 +103,6 @@ public class ChatController {
         });
         emitter.onTimeout(() -> {
         });
-
-        if ("error".equals(userId)) {
-            try {
-                String formatted = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
-                ChatVO chatVO = ChatVO.builder().isFinish(false).userId(null)
-                        .answer("您被顶下线或未登录，请回到首页并重新登录").chatId(null).date(formatted)
-                        .build();
-                String sendData = JSON.toJSONString(chatVO);
-                emitter.send(SseEmitter.event().data(sendData));
-                chatVO.setIsFinish(true);
-                sendData = JSON.toJSONString(chatVO);
-                emitter.send(SseEmitter.event().data(sendData));
-            } catch (IOException e) {
-                log.error("===>{}", e.getMessage());
-            }
-            emitter.complete();
-            return emitter;
-        }
-
         UserDTO userDTO = UserDTO.builder().phone(userId).build();
         // 处理未正常提供chatId的情况
         if (!StringUtils.hasText(question.getChatId())) {
@@ -176,7 +160,10 @@ public class ChatController {
     @ApiOperation(value = "FoxAI-查询对话历史", notes = "FoxAI-查询对话历史")
     @PostMapping(value = "/query")
     public Result<List<ChatHisVO>> query(@RequestBody QuestionDTO question) {
-        String userId = StpUtil.getLoginIdAsString();
+        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
+        if("error".equals(userId)){
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
+        }
         String chatId = question.getChatId();
         List<ChatHisVO> result = chatByCoseService.queryHistory(chatId, userId);
         return Result.ok(result);
