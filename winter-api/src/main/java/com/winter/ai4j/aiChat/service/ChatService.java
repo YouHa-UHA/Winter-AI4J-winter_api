@@ -51,4 +51,6 @@ public interface ChatService extends IService<ApiKeyPO> {
      */
     List<ChatHisVO> queryHistory(String chatId, String userId);
 
+    List<ChatHisVO> listHistory(String userId);
+
 }

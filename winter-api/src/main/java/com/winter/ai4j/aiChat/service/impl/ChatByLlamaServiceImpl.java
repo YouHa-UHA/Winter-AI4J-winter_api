@@ -202,6 +202,12 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
         return null;
     }
 
+    @Override
+    public List<ChatHisVO> listHistory(String userId) {
+
+        return null;
+    }
+
 
     // SSEListener内部类，用于处理接收到的事件数据
     private static class SSEListener extends EventSourceListener {
