@@ -71,7 +71,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
      * 创建会话
      * */
     @Override
-    public String createChat() {
+    public String createChat(String userId) {
         // // TODO 后边增加一个全局异常的链接类,直接捕获全局返回模型丢失
         // //增加判空，避免接口错误
         // if (apiKeys.get("ai_coze_create") == null) {

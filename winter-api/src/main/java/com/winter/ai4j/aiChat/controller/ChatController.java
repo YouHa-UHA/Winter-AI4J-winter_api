@@ -71,7 +71,7 @@ public class ChatController {
         if("error".equals(userId)){
             throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
         }
-        String chat = chatByCoseService.createChat();
+        String chat = chatByCoseService.createChat(userId);
         return Result.ok(chat);
     }
 

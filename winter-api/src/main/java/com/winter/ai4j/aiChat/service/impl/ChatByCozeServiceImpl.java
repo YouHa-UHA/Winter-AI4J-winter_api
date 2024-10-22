@@ -41,6 +41,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -97,13 +98,17 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * 创建会话
      * */
     @Override
-    public String createChat() {
-        // TODO 后边增加一个全局异常的链接类,直接捕获全局返回模型丢失
-        // 增加判空，避免接口错误
+    public String createChat(String userId) {
         if (apiKeys.get("ai_coze") == null) {
-            log.info("无法找到Coze对应的API Key");
-            return "无法找到Coze对应的API Key";
+            throw new BusinessException("无法找到对应的API Key", ResultCodeEnum.FAIL.getCode());
         }
+
+        RList<String> chatListClient = redissonClient.getList("chat:" + userId + ":list");
+        // 检查是不是已经有创建的新会话还没有用过的新会话
+        if (!chatListClient.isEmpty()) {
+            return chatListClient.get(0);
+        }
+
         ApiKeyPO cozeCreat = apiKeys.get("ai_coze");
         OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
                 .readTimeout(60, TimeUnit.SECONDS)
@@ -134,9 +139,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .orElse(null);
 
                 // 记录会话历史,先载入redis
-
-
-
+                String format = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
+                ChatListPO chatListPO = ChatListPO.builder().phone(userId)
+                        .chatId(result).chatName("新会话").time(format).build();
+                String chatListStr = JSON.toJSONString(chatListPO);
+                chatListClient.add(chatListStr);
 
                 return result;
             } else {
