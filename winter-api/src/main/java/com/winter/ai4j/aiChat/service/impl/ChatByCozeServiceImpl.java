@@ -106,7 +106,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         RList<String> chatListClient = redissonClient.getList("chat:" + userId + ":list");
         // 检查是不是已经有创建的新会话还没有用过的新会话
         if (!chatListClient.isEmpty()) {
-            return chatListClient.get(0);
+            ChatListPO chatListPO = JSON.parseObject(chatListClient.get(0),ChatListPO.class);
+            return chatListPO.getChatId();
         }
 
         ApiKeyPO cozeCreat = apiKeys.get("ai_coze");
