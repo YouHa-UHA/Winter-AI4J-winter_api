@@ -97,13 +97,18 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * 创建会话
      * */
     @Override
-    public String createChat() {
-        // TODO 后边增加一个全局异常的链接类,直接捕获全局返回模型丢失
-        // 增加判空，避免接口错误
+    public String createChat(String userId) {
         if (apiKeys.get("ai_coze") == null) {
-            log.info("无法找到Coze对应的API Key");
-            return "无法找到Coze对应的API Key";
+            throw new BusinessException("无法找到对应的API Key", ResultCodeEnum.FAIL.getCode());
         }
+
+        RList<String> chatListClient = redissonClient.getList("chat:" + userId + ":list");
+        // 检查是不是已经有创建的新会话还没有用过的新会话
+        if (!chatListClient.isEmpty()) {
+            ChatListPO chatListPO = JSON.parseObject(chatListClient.get(0), ChatListPO.class);
+            return chatListPO.getChatId();
+        }
+
         ApiKeyPO cozeCreat = apiKeys.get("ai_coze");
         OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
                 .readTimeout(60, TimeUnit.SECONDS)
@@ -134,9 +139,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .orElse(null);
 
                 // 记录会话历史,先载入redis
-
-
-
+                String format = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
+                ChatListPO chatListPO = ChatListPO.builder().phone(userId)
+                        .chatId(result).chatName("新会话").time(format).build();
+                String chatListStr = JSON.toJSONString(chatListPO);
+                chatListClient.add(chatListStr);
 
                 return result;
             } else {
@@ -155,8 +162,18 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     @Override
     public String question(SseEmitter emitter, QuestionDTO question, UserDTO user) {
 
-        ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
+        // 检查是不是有新会话没有被同步到mysql
+        RList<String> chatListClient = redissonClient.getList("chat:" + user.getPhone() + ":list");
+        if (!chatListClient.isEmpty()) {
+            for (String chatList : chatListClient) {
+                ChatListPO chatListPO = JSON.parseObject(chatList, ChatListPO.class);
+                chatListPO.setChatName(question.getQuestion().substring(10));
+                chatListMapper.insert(chatListPO);
+            }
+        }
+        chatListClient.clear();
 
+        ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
         // 记录问题历史内容
         String chatId = question.getChatId();
         RList<String> chatHistoryString = redissonClient.getList("chat_his:" + chatId);
@@ -239,8 +256,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     }
 
     /*
-    * 查询对话历史
-    * */
+     * 查询对话历史
+     * */
     @Override
     public List<ChatListPO> listHistory(String userId) {
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -501,7 +518,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             return false;
         }
     }
-
 
 
 }

@@ -65,13 +65,13 @@ public class ChatController {
      */
     @ApiOperation(value = "chat-创建会话", notes = "创建对话")
     @PostMapping(value = "/create")
-    public Result<String> createCoze() {
+    public Result<String> create() {
         // TODO 未登录处理 优化成直接抛出异常
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
         if("error".equals(userId)){
             throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
         }
-        String chat = chatByCoseService.createChat();
+        String chat = chatByCoseService.createChat(userId);
         return Result.ok(chat);
     }
 

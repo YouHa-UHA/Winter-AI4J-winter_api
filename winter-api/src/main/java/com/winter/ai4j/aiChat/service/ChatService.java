@@ -29,7 +29,7 @@ public interface ChatService extends IService<ApiKeyPO> {
      * @param
      * @return
      */
-    String createChat();
+    String createChat(String userId);
 
     /**
      * 进行会话
