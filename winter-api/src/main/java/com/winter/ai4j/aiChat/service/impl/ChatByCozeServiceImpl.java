@@ -41,7 +41,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -106,7 +105,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         RList<String> chatListClient = redissonClient.getList("chat:" + userId + ":list");
         // 检查是不是已经有创建的新会话还没有用过的新会话
         if (!chatListClient.isEmpty()) {
-            ChatListPO chatListPO = JSON.parseObject(chatListClient.get(0),ChatListPO.class);
+            ChatListPO chatListPO = JSON.parseObject(chatListClient.get(0), ChatListPO.class);
             return chatListPO.getChatId();
         }
 
@@ -163,8 +162,18 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     @Override
     public String question(SseEmitter emitter, QuestionDTO question, UserDTO user) {
 
-        ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
+        // 检查是不是有新会话没有被同步到mysql
+        RList<String> chatListClient = redissonClient.getList("chat:" + user.getPhone() + ":list");
+        if (!chatListClient.isEmpty()) {
+            for (String chatList : chatListClient) {
+                ChatListPO chatListPO = JSON.parseObject(chatList, ChatListPO.class);
+                chatListPO.setChatName(question.getQuestion().substring(10));
+                chatListMapper.insert(chatListPO);
+            }
+        }
+        chatListClient.clear();
 
+        ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
         // 记录问题历史内容
         String chatId = question.getChatId();
         RList<String> chatHistoryString = redissonClient.getList("chat_his:" + chatId);
@@ -247,8 +256,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     }
 
     /*
-    * 查询对话历史
-    * */
+     * 查询对话历史
+     * */
     @Override
     public List<ChatListPO> listHistory(String userId) {
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -509,7 +518,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             return false;
         }
     }
-
 
 
 }
