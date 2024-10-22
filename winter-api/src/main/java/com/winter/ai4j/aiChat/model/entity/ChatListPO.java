@@ -1,6 +1,9 @@
 package com.winter.ai4j.aiChat.model.entity;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.winter.ai4j.common.model.BaseEntity;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +25,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ChatListPO {
+@TableName("chat_list")
+public class ChatListPO extends BaseEntity {
+
+    @ApiModelProperty(value = "手机号(用户ID)", required = true)
+    @TableField("phone")
+    private String phone;
 
     @ApiModelProperty(value = "会话ID")
     @JSONField(name = "chat_id")

@@ -3,6 +3,7 @@ package com.winter.ai4j.aiChat.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
+import com.winter.ai4j.aiChat.model.entity.ChatListPO;
 import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.user.model.dto.UserDTO;
@@ -51,6 +52,11 @@ public interface ChatService extends IService<ApiKeyPO> {
      */
     List<ChatHisVO> queryHistory(String chatId, String userId);
 
-    List<ChatHisVO> listHistory(String userId);
+    /**
+     * 查询历史记录
+     * @param
+     * @return List<ChatHisVO>
+     */
+    List<ChatListPO> listHistory(String userId);
 
 }

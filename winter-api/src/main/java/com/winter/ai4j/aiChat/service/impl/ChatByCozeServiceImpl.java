@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
+import com.winter.ai4j.aiChat.mapper.ChatListMapper;
 import com.winter.ai4j.aiChat.model.coze.CozeCreateRes;
 import com.winter.ai4j.aiChat.model.coze.CozeQueReq;
 import com.winter.ai4j.aiChat.model.coze.CozeQueRes;
@@ -14,10 +15,13 @@ import com.winter.ai4j.aiChat.model.coze.CozeRes;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.entity.ChatHisPO;
+import com.winter.ai4j.aiChat.model.entity.ChatListPO;
 import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
+import com.winter.ai4j.common.constant.ResultCodeEnum;
+import com.winter.ai4j.common.execption.BusinessException;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -62,6 +66,9 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
     @Autowired
     private RedissonClient redissonClient;
+
+    @Autowired
+    private ChatListMapper chatListMapper;
 
     // 存储appKey
     private Map<String, ApiKeyPO> apiKeys;
@@ -113,12 +120,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .build();
         try (Response execute = HTTP_CLIENT.newCall(request).execute()) {
             if (execute.isSuccessful()) {
-                String responseString = null;
-                // TODO 优化
-                if (execute.body() != null) {
-                    responseString = execute.body().string();
-                }
-
+                String responseString = execute.body() != null ? execute.body().string() : null;
                 // TypeReference是fastjson提供的一个类，用于实现泛型的反序列化。
                 CozeRes<CozeCreateRes> cozeRes = JSON.parseObject
                         (responseString, new TypeReference<CozeRes<CozeCreateRes>>() {
@@ -126,18 +128,23 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 log.info("创建会话成功:{}", cozeRes);
                 // Optional.ofNullable(T t) 方法的作用是判断t是否为null，
                 // 中间任何一步为空都会返回一个空的Optional对象，不会抛出空指针异常
-                return Optional.ofNullable(cozeRes)
+                String result = Optional.ofNullable(cozeRes)
                         .map(CozeRes::getData)
                         .map(CozeCreateRes::getId)
                         .orElse(null);
 
+                // 记录会话历史,先载入redis
+
+
+
+
+                return result;
             } else {
-                log.error("创建会话失败:{}", execute.body().string());
-                return null;
+                throw new BusinessException("创建会话失败", ResultCodeEnum.FAIL.getCode());
             }
         } catch (IOException e) {
             log.error("创建会话失败", e);
-            return null;
+            throw new BusinessException("创建会话失败", ResultCodeEnum.FAIL.getCode());
         }
     }
 
@@ -235,9 +242,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     * 查询对话历史
     * */
     @Override
-    public List<ChatHisVO> listHistory(String userId) {
-
-        return null;
+    public List<ChatListPO> listHistory(String userId) {
+        LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
+        List<ChatListPO> chatListPOS = chatListMapper.selectList(chatListPOLambdaQueryWrapper);
+        return chatListPOS;
     }
 
 

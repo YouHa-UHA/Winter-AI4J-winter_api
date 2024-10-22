@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
 @TableName("user")
 public class UserDTO {
 
-    @ApiModelProperty(value = "手机号", required = true)
+    @ApiModelProperty(value = "手机号(用户ID)", required = true)
     @TableField("phone")
     private String phone;
 
