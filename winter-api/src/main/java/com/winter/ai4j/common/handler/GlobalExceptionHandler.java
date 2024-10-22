@@ -39,7 +39,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
-    public Result error(BusinessException e){
+    public Result error(BusinessException e,HttpServletResponse response){
+        response.setStatus(208);
         return Result.fail(e.getMessage());
     }
 
