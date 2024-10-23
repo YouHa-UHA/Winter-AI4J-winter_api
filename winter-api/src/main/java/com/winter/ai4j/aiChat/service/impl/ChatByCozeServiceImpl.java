@@ -266,8 +266,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             RList<String> rChatHistoryString = redissonClient.getList("chat_his:" + oldChartId);
             // 更新历史记录
             LambdaQueryWrapper<ChatHistoryPO> oldChatHistoryWrapper = new LambdaQueryWrapper<>();
-            oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId);
-            oldChatHistoryWrapper.eq(ChatHistoryPO::getChatId, oldChartId);
+            oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                    .eq(ChatHistoryPO::getChatId, oldChartId);
             ChatHistoryPO oldChatHistoryPO = chatHistoryService.getOne(oldChatHistoryWrapper);
             oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
             chatHistoryService.saveOrUpdate(oldChatHistoryPO);
@@ -275,8 +275,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             rChatHistoryString.clear();
             // 拿出新的对话
             LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
-            ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId);
-            ChatHistoryWrapper.eq(ChatHistoryPO::getChatId, chatId);
+            ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                    .eq(ChatHistoryPO::getChatId, chatId);
             ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
             String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
             List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
