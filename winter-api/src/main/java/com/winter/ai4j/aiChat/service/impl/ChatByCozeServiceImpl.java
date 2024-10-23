@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -68,15 +69,16 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Service
 public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> implements ChatService {
 
+    @Lazy
     @Autowired
     private ChatHistoryService chatHistoryService;
 
+    @Lazy
+    @Autowired
+    private ChatListServiceImpl ChatListService;
+
     @Autowired
     private RedissonClient redissonClient;
-
-    @Autowired
-    private ChatListMapper chatListMapper;
-
 
     // 存储appKey
     private Map<String, ApiKeyPO> apiKeys;
@@ -176,7 +178,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             for (String chatList : chatListClient) {
                 ChatListPO chatListPO = JSON.parseObject(chatList, ChatListPO.class);
                 chatListPO.setChatName(question.getQuestion().substring(10));
-                chatListMapper.insert(chatListPO);
+                ChatListService.save(chatListPO);
             }
         }
         chatListClient.clear();
@@ -306,7 +308,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     public List<ChatListPO> listHistory(String userId) {
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
-        List<ChatListPO> chatListPOS = chatListMapper.selectList(chatListPOLambdaQueryWrapper);
+        List<ChatListPO> chatListPOS = ChatListService.list(chatListPOLambdaQueryWrapper);
         return chatListPOS;
     }
 
