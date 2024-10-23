@@ -256,7 +256,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     public List<ChatHisVO> queryHistory(String chatId, String userId) {
         // 最终返回
         List<ChatHisVO> chartHistories = new ArrayList<>();
-        // 中间处理
         List<String> chatHistoryString = new ArrayList<>();
         // 当前历史
         String oldChartId = (String) redissonClient.getBucket("current:" + chatId).get();
@@ -273,7 +272,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             chatHistoryService.saveOrUpdate(oldChatHistoryPO);
             // 清空当前历史
             rChatHistoryString.clear();
-            // 拿出新的对话
+
+
             LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
             ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
                     .eq(ChatHistoryPO::getChatId, chatId);
