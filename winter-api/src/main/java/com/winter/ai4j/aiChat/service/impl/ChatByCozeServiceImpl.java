@@ -15,19 +15,23 @@ import com.winter.ai4j.aiChat.model.coze.CozeRes;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.entity.ChatHisPO;
+import com.winter.ai4j.aiChat.model.entity.ChatHistoryPO;
 import com.winter.ai4j.aiChat.model.entity.ChatListPO;
 import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
+import com.winter.ai4j.aiChat.service.ChatHistoryService;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.common.constant.ResultCodeEnum;
 import com.winter.ai4j.common.execption.BusinessException;
+import com.winter.ai4j.common.util.GZipUtil;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
@@ -65,10 +69,14 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> implements ChatService {
 
     @Autowired
+    private ChatHistoryService chatHistoryService;
+
+    @Autowired
     private RedissonClient redissonClient;
 
     @Autowired
     private ChatListMapper chatListMapper;
+
 
     // 存储appKey
     private Map<String, ApiKeyPO> apiKeys;
@@ -246,12 +254,48 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * */
     @Override
     public List<ChatHisVO> queryHistory(String chatId, String userId) {
+        // 最终返回
         List<ChatHisVO> chartHistories = new ArrayList<>();
-        RList<String> chatHistoryString = redissonClient.getList("chat_his:" + chatId);
+        // 中间处理
+        List<String> chatHistoryString = new ArrayList<>();
+        // 当前历史
+        String oldChartId = (String) redissonClient.getBucket("current:" + chatId).get();
+        // 检查是否发生了对话切换
+        if (!StringUtils.equals(chatId, oldChartId)) {
+            // 发生了对话切换，需要重新载入历史记录，先覆盖当前的
+            RList<String> rChatHistoryString = redissonClient.getList("chat_his:" + oldChartId);
+            // 更新历史记录
+            LambdaQueryWrapper<ChatHistoryPO> oldChatHistoryWrapper = new LambdaQueryWrapper<>();
+            oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                    .eq(ChatHistoryPO::getChatId, oldChartId);
+            ChatHistoryPO oldChatHistoryPO = chatHistoryService.getOne(oldChatHistoryWrapper);
+            oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
+            chatHistoryService.saveOrUpdate(oldChatHistoryPO);
+            // 清空当前历史
+            rChatHistoryString.clear();
+            // 拿出新的对话
+            LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
+            ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                    .eq(ChatHistoryPO::getChatId, chatId);
+            ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
+            String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
+            List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
+            chatHistoryString.addAll(chatHisVOS);
+            // 更新当前对话
+            redissonClient.getBucket("current:" + chatId).set(chatId);
+            RList<String> list = redissonClient.getList("chat_his:" + chatId);
+            list.addAll(chatHisVOS);
+        } else {
+            // 没有发生对话切换，直接读取redis中的历史记录
+            RList<String> list = redissonClient.getList("chat_his:" + chatId);
+            chatHistoryString.addAll(list);
+        }
+
         for (String message : chatHistoryString) {
             ChatHisVO chatHisVO = JSON.parseObject(message, ChatHisVO.class);
             chartHistories.add(chatHisVO);
         }
+
         return chartHistories;
     }
 

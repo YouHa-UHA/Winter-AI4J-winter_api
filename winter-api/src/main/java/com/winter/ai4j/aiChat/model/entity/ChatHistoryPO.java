@@ -25,10 +25,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@TableName("chat_list")
-public class ChatListPO extends BaseEntity {
+@TableName("chat_history")
+public class ChatHistoryPO extends BaseEntity {
 
-    @ApiModelProperty(value = "手机号(用户ID)", required = true)
+    @ApiModelProperty(value = "手机号(用户ID)")
     @TableField("phone")
     private String phone;
 
@@ -40,8 +40,8 @@ public class ChatListPO extends BaseEntity {
     @JSONField(name = "chat_name")
     private String chatName;
 
-    @ApiModelProperty(value = "对话时间")
-    @JSONField(name = "time")
-    private String time;
+    @ApiModelProperty(value = "会话内容")
+    @JSONField(name = "compressed_data")
+    private byte[] compressedData;
 
 }
