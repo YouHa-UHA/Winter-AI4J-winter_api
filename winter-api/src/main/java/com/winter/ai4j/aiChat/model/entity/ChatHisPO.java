@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 /**
  * ClassName: ChatHisPO
  * <blockquote><pre>
- * Description: [聊天历史]
+ * Description: [聊天历史-redis]
  * </pre></blockquote>
  *
  * @author WYH4J

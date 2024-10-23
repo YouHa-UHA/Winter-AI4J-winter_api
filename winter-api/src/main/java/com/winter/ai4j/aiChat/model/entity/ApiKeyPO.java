@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 /**
  * ClassName: ApiKeyPO
  * <blockquote><pre>
- * Description: [ApiKeyPO]
+ * Description: [ApiKeyPO-mysql]
  * </pre></blockquote>
  *
  * @author WYH4J
