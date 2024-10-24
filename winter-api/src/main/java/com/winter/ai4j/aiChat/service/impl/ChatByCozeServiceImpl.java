@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -68,15 +69,16 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Service
 public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> implements ChatService {
 
+    @Lazy
     @Autowired
     private ChatHistoryService chatHistoryService;
 
+    @Lazy
+    @Autowired
+    private ChatListServiceImpl ChatListService;
+
     @Autowired
     private RedissonClient redissonClient;
-
-    @Autowired
-    private ChatListMapper chatListMapper;
-
 
     // 存储appKey
     private Map<String, ApiKeyPO> apiKeys;
@@ -176,7 +178,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             for (String chatList : chatListClient) {
                 ChatListPO chatListPO = JSON.parseObject(chatList, ChatListPO.class);
                 chatListPO.setChatName(question.getQuestion().substring(10));
-                chatListMapper.insert(chatListPO);
+                ChatListService.save(chatListPO);
             }
         }
         chatListClient.clear();
@@ -256,7 +258,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     public List<ChatHisVO> queryHistory(String chatId, String userId) {
         // 最终返回
         List<ChatHisVO> chartHistories = new ArrayList<>();
-        // 中间处理
         List<String> chatHistoryString = new ArrayList<>();
         // 当前历史
         String oldChartId = (String) redissonClient.getBucket("current:" + chatId).get();
@@ -273,7 +274,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             chatHistoryService.saveOrUpdate(oldChatHistoryPO);
             // 清空当前历史
             rChatHistoryString.clear();
-            // 拿出新的对话
+
+
             LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
             ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
                     .eq(ChatHistoryPO::getChatId, chatId);
@@ -306,7 +308,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     public List<ChatListPO> listHistory(String userId) {
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
-        List<ChatListPO> chatListPOS = chatListMapper.selectList(chatListPOLambdaQueryWrapper);
+        List<ChatListPO> chatListPOS = ChatListService.list(chatListPOLambdaQueryWrapper);
         return chatListPOS;
     }
 
