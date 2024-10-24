@@ -160,7 +160,7 @@ public class ChatController {
     public Result<List<ChatListPO>> list() {
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
         if("error".equals(userId)){
-            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
         }
         List<ChatListPO> chatListPOS = chatByCoseService.listHistory(userId);
         return Result.ok(chatListPOS);
