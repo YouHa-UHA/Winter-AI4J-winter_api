@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
-import com.winter.ai4j.aiChat.mapper.ChatListMapper;
 import com.winter.ai4j.aiChat.model.coze.CozeCreateRes;
 import com.winter.ai4j.aiChat.model.coze.CozeQueReq;
 import com.winter.ai4j.aiChat.model.coze.CozeQueRes;

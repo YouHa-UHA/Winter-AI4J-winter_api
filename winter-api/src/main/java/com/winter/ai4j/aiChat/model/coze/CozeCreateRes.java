@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
  * @since 1.0.0
  */
 @Data
-@JSONType(orders={"created_at", "id"})
+@JSONType(orders = {"created_at", "id"})
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

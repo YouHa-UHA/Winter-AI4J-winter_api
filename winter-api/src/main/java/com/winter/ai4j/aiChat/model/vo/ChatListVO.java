@@ -1,7 +1,6 @@
 package com.winter.ai4j.aiChat.model.vo;
 
 import com.alibaba.fastjson2.annotation.JSONField;
-import com.alibaba.fastjson2.annotation.JSONType;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
