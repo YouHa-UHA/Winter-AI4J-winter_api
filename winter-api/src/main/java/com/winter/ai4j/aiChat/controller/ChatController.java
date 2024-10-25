@@ -68,15 +68,16 @@ public class ChatController {
     public Result<String> create() {
         // TODO 未登录处理 优化成直接抛出异常
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        if("error".equals(userId)){
-            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
+        if ("error".equals(userId)) {
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
         }
         String chat = chatByCoseService.createChat(userId);
         return Result.ok(chat);
     }
 
 
-    /**-
+    /**
+     * -
      * Chat-进行对话
      *
      * @param question 问题
@@ -92,8 +93,8 @@ public class ChatController {
         // lock.lock(100, TimeUnit.SECONDS);
 
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        if("error".equals(userId)){
-            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
+        if ("error".equals(userId)) {
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
         }
 
         // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
@@ -149,7 +150,6 @@ public class ChatController {
     }
 
 
-
     /**
      * Chat-查询历史列表
      *
@@ -159,13 +159,12 @@ public class ChatController {
     @PostMapping(value = "/list")
     public Result<List<ChatListPO>> list() {
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        if("error".equals(userId)){
+        if ("error".equals(userId)) {
             throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
         }
         List<ChatListPO> chatListPOS = chatByCoseService.listHistory(userId);
         return Result.ok(chatListPOS);
     }
-
 
 
     /**
@@ -178,8 +177,8 @@ public class ChatController {
     @PostMapping(value = "/query")
     public Result<List<ChatHisVO>> query(@RequestBody QuestionDTO question) {
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        if("error".equals(userId)){
-            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN , NotLoginException.NOT_TOKEN_MESSAGE);
+        if ("error".equals(userId)) {
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
         }
         String chatId = question.getChatId();
         List<ChatHisVO> result = chatByCoseService.queryHistory(chatId, userId);

@@ -26,6 +26,7 @@ public interface ChatService extends IService<ApiKeyPO> {
 
     /**
      * 创建会话
+     *
      * @param
      * @return
      */
@@ -33,6 +34,7 @@ public interface ChatService extends IService<ApiKeyPO> {
 
     /**
      * 进行会话
+     *
      * @param question
      * @return
      */
@@ -40,6 +42,7 @@ public interface ChatService extends IService<ApiKeyPO> {
 
     /**
      * 获取联想回复
+     *
      * @param
      * @return FollowVO
      */
@@ -47,6 +50,7 @@ public interface ChatService extends IService<ApiKeyPO> {
 
     /**
      * 查询历史记录
+     *
      * @param
      * @return List<ChatHisVO>
      */
@@ -54,6 +58,7 @@ public interface ChatService extends IService<ApiKeyPO> {
 
     /**
      * 查询历史记录
+     *
      * @param
      * @return List<ChatHisVO>
      */
