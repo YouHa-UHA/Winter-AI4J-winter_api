@@ -57,10 +57,10 @@ public interface ChatService extends IService<ApiKeyPO> {
     List<ChatHisVO> queryHistory(String chatId, String userId);
 
     /**
-     * 查询历史记录
+     * 查询历史列表
      *
      * @param
-     * @return List<ChatHisVO>
+     * @return List<ChatListPO>
      */
     List<ChatListPO> listHistory(String userId);
 
