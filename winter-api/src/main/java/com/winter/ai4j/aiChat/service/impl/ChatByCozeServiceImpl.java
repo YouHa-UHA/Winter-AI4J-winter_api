@@ -300,8 +300,9 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         return chartHistories;
     }
 
+
     /*
-     * 查询对话历史
+     * 查询历史列表
      * */
     @Override
     public List<ChatListPO> listHistory(String userId) {
