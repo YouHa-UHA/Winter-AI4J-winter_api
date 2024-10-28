@@ -151,23 +151,6 @@ public class ChatController {
 
 
     /**
-     * Chat-查询历史列表
-     *
-     * @return 查询对话历史结果
-     */
-    @ApiOperation(value = "FoxAI-查询历史列表", notes = "FoxAI-查询历史列表")
-    @PostMapping(value = "/list")
-    public Result<List<ChatListPO>> list() {
-        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        if ("error".equals(userId)) {
-            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
-        }
-        List<ChatListPO> chatListPOS = chatByCoseService.listHistory(userId);
-        return Result.ok(chatListPOS);
-    }
-
-
-    /**
      * Chat-查询对话历史
      *
      * @param question 用户ID
@@ -183,6 +166,23 @@ public class ChatController {
         String chatId = question.getChatId();
         List<ChatHisVO> result = chatByCoseService.queryHistory(chatId, userId);
         return Result.ok(result);
+    }
+
+
+    /**
+     * Chat-查询历史列表
+     *
+     * @return 查询历史列表结果
+     */
+    @ApiOperation(value = "FoxAI-查询历史列表", notes = "FoxAI-查询历史列表")
+    @PostMapping(value = "/list")
+    public Result<List<ChatListPO>> list() {
+        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
+        if ("error".equals(userId)) {
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
+        }
+        List<ChatListPO> chatListPOS = chatByCoseService.listHistory(userId);
+        return Result.ok(chatListPOS);
     }
 
 
