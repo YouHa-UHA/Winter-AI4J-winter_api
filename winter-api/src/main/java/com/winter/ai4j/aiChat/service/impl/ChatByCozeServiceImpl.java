@@ -45,6 +45,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -150,7 +151,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 // 记录会话历史,先载入redis
                 String format = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
                 ChatListPO chatListPO = ChatListPO.builder().phone(userId)
-                        .chatId(result).chatName("新会话").time(format).build();
+                        .chatId(result).chatName("新会话").time(LocalDateTime.now()).build();
                 String chatListStr = JSON.toJSONString(chatListPO);
                 chatListClient.add(chatListStr);
 
@@ -176,7 +177,9 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         if (!chatListClient.isEmpty()) {
             for (String chatList : chatListClient) {
                 ChatListPO chatListPO = JSON.parseObject(chatList, ChatListPO.class);
-                chatListPO.setChatName(question.getQuestion().substring(10));
+                chatListPO.setChatName(question.getQuestion().length() <= 10
+                        ? question.getQuestion()
+                        : question.getQuestion().substring(10));
                 ChatListService.save(chatListPO);
             }
         }
