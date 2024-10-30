@@ -15,15 +15,35 @@ import java.util.Objects;
 @Data
 public class Result<T> implements Serializable {
 
+    /**
+     * 序列化版本号
+     */
     private Integer code;
 
+    /**
+     * 返回消息
+     */
     private String message;
 
+    /**
+     * 返回数据
+     */
     private T data;
 
+    /**
+     * 构造函数
+     */
     public Result() {
     }
 
+    /**
+     * 构建返回结果
+     * @param data 返回数据
+     * @param code 返回码
+     * @param message 返回消息
+     * @param <T> 返回数据类型
+     * @return Result<T> 返回结果
+     */
     private static <T> Result<T> build(T data, Integer code, String message) {
         Result<T> result = new Result<>();
         result.setData(data);
@@ -32,26 +52,68 @@ public class Result<T> implements Serializable {
         return result;
     }
 
+    /**
+     * 构建返回结果
+     * @param data 返回数据
+     * @param codeEnum 返回码枚举
+     * @param <T> 返回数据类型
+     * @return Result<T> 返回结果
+     */
     public static <T> Result<T> ok() {
         return ok(null);
     }
 
+    /**
+     * 构建返回结果
+     * @param data 返回数据
+     * @param codeEnum 返回码枚举
+     * @param <T> 返回数据类型
+     * @return Result<T> 返回结果
+     */
     public static <T> Result<T> ok(T data) {
         return build(data, ResultCodeEnum.SUCCESS.getCode(), ResultCodeEnum.SUCCESS.getMessage());
     }
 
+    /**
+     * 构建返回结果
+     * @param data 返回数据
+     * @param codeEnum 返回码枚举
+     * @param <T> 返回数据类型
+     * @return Result<T> 返回结果
+     */
     public static <T> Result<T> fail() {
         return fail(null);
     }
 
+    /**
+     * 构建返回结果
+     * @param data 返回数据
+     * @param codeEnum 返回码枚举
+     * @param <T> 返回数据类型
+     * @return Result<T> 返回结果
+     */
     public static <T> Result<T> fail(T data) {
         return build(data, ResultCodeEnum.FAIL.getCode(), ResultCodeEnum.FAIL.getMessage());
     }
 
+    /**
+     * 构建返回结果
+     * @param data 返回数据
+     * @param codeEnum 返回码枚举
+     * @param <T> 返回数据类型
+     * @return Result<T> 返回结果
+     */
     public static <T> Result<T> fail(T data, String message) {
         return build(data, ResultCodeEnum.FAIL.getCode(), message);
     }
 
+    /**
+     * 构建返回结果
+     * @param data 返回数据
+     * @param codeEnum 返回码枚举
+     * @param <T> 返回数据类型
+     * @return Result<T> 返回结果
+     */
     public static <T> Result<T> custom(T data, Integer code, String message) {
         return build(data, code, message);
     }
