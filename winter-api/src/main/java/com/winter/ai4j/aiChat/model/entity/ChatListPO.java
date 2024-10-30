@@ -10,6 +10,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * ClassName: ChatListVO
  * <blockquote><pre>
@@ -42,6 +44,6 @@ public class ChatListPO extends BaseEntity {
 
     @ApiModelProperty(value = "对话时间")
     @JSONField(name = "time")
-    private String time;
+    private LocalDateTime time;
 
 }

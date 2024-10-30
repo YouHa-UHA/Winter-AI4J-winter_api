@@ -17,7 +17,6 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 public class BaseEntity implements Serializable {
 
     @TableId(type = IdType.AUTO)
