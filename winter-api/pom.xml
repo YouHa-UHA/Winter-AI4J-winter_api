@@ -164,6 +164,11 @@
             <artifactId>ip2region</artifactId>
             <version>2.7.0</version>
         </dependency>
+        <dependency>
+            <groupId>de.mkammerer</groupId>
+            <artifactId>argon2-jvm</artifactId>
+            <version>2.7</version>
+        </dependency>
         <!-- Knife4j的集成启动器 -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
