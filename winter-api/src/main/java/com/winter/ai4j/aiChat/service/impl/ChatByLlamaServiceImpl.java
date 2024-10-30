@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.winter.ai4j.aiChat.mapper.ApiKeyMapper;
 import com.winter.ai4j.aiChat.model.dto.QuestionDTO;
 import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
+import com.winter.ai4j.aiChat.model.entity.ChatListPO;
 import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
@@ -18,7 +19,6 @@ import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Primary;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -28,7 +28,6 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_NDJSON_VALUE;
 
 /**
@@ -70,7 +69,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
      * 创建会话
      * */
     @Override
-    public String createChat() {
+    public String createChat(String userId) {
         // // TODO 后边增加一个全局异常的链接类,直接捕获全局返回模型丢失
         // //增加判空，避免接口错误
         // if (apiKeys.get("ai_coze_create") == null) {
@@ -169,7 +168,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
 
                     String line;
-                    while ((line = reader.readLine())!= null) {
+                    while ((line = reader.readLine()) != null) {
                         // 在这里处理接收到的 SSE 事件数据
                         System.out.println(response);
                         emitter.send(SseEmitter.event().data(line));
@@ -199,6 +198,12 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
 
     @Override
     public List<ChatHisVO> queryHistory(String chatId, String userId) {
+        return null;
+    }
+
+    @Override
+    public List<ChatListPO> listHistory(String userId) {
+
         return null;
     }
 

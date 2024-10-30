@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 /**
  * ClassName: ChatHisPO
  * <blockquote><pre>
- * Description: [聊天历史]
+ * Description: [聊天历史-redis]
  * </pre></blockquote>
  *
  * @author WYH4J
@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
  * @since 1.0.0
  */
 @Data
-@JSONType(orders={"role", "type", "quote", "content", "content_type", "extra_info", "if_like", "chat_his_id"})
+@JSONType(orders = {"role", "type", "quote", "content", "content_type", "extra_info", "if_like", "chat_his_id"})
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

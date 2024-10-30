@@ -6,7 +6,7 @@ import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 /**
  * ClassName: ApiKeyMapper
  * <blockquote><pre>
- * Description: [描述]
+ * Description: [ApiKey的Mapper]
  * </pre></blockquote>
  *
  * @author WYH4J
