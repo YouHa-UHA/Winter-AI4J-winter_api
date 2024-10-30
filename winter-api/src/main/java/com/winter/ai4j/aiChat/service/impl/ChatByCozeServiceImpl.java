@@ -3,6 +3,7 @@ package com.winter.ai4j.aiChat.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -84,7 +85,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     private Map<String, ApiKeyPO> apiKeys;
 
     String API_KEY;
-
 
     // 启动执行注解
     @PostConstruct
@@ -309,8 +309,12 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * */
     @Override
     public List<ChatListPO> listHistory(String userId) {
+        // 分页查询
+        Page<ChatListPO> page = new Page<>(1, 20);
+
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
+        // Page<ChatListPO> chatListPOS = ChatListService.page(page, chatListPOLambdaQueryWrapper);
         List<ChatListPO> chatListPOS = ChatListService.list(chatListPOLambdaQueryWrapper);
         return chatListPOS;
     }

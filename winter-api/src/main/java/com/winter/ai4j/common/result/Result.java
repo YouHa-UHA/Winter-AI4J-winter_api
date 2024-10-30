@@ -61,7 +61,7 @@ public class Result<T> implements Serializable {
      * @param msg 消息内容
      * @return Result<T> 当前对象，用于链式调用
      */
-    public Result<T> setMessage(String msg) {
+    public Result<T> message(String msg) {
         this.setMessage(msg);
         return this;
     }
@@ -71,7 +71,7 @@ public class Result<T> implements Serializable {
      * @param code 返回码
      * @return Result<T> 当前对象，用于链式调用
      */
-    public Result<T> setCode(Integer code) {
+    public Result<T> code(Integer code) {
         this.setCode(code);
         return this;
     }
