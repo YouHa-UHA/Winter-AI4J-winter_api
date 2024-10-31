@@ -11,6 +11,8 @@ import com.winter.ai4j.aiChat.model.entity.ChatListPO;
 import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
+import com.winter.ai4j.common.model.BaseDTO;
+import com.winter.ai4j.common.model.BaseVO;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -202,7 +204,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
     }
 
     @Override
-    public List<ChatListPO> listHistory(String userId) {
+    public BaseVO<List<ChatListPO>> listHistory(BaseDTO baseDTO, String userId) {
 
         return null;
     }
