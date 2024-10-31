@@ -34,6 +34,7 @@ import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
@@ -285,9 +286,18 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * */
     @Override
     public List<ChatHisVO> queryHistory(String chatId, String userId) {
+        // 首先确定chatId是否存在
+        LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
+        ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                .eq(ChatHistoryPO::getChatId, chatId);
+        ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
+        if (ObjectUtils.isEmpty(chatHistoryPO)) {
+            throw new BusinessException("无法找到对应的历史记录", ResultCodeEnum.FAIL.getCode());
+        }
+
         // 最终返回
         List<ChatHisVO> chartHistories = new ArrayList<>();
-        List<String> chatHistoryString = new ArrayList<>();
+
         // 当前历史
         String oldChartId = (String) redissonClient.getBucket("current:" + userId).get();
         // 检查是否发生了对话切换
@@ -300,24 +310,14 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
                         .eq(ChatHistoryPO::getChatId, oldChartId);
                 ChatHistoryPO oldChatHistoryPO = chatHistoryService.getOne(oldChatHistoryWrapper);
-                oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
-                chatHistoryService.saveOrUpdate(oldChatHistoryPO);
+                if(!ObjectUtils.isEmpty(oldChatHistoryPO)){
+                    oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
+                    chatHistoryService.saveOrUpdate(oldChatHistoryPO);
+                }
                 // 清空当前历史
                 rChatHistoryString.clear();
             }
 
-            // 读取新的历史记录
-            LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
-            ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
-                    .eq(ChatHistoryPO::getChatId, chatId);
-            ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
-            if (chatHistoryPO == null) {
-                chatHistoryPO = ChatHistoryPO.builder()
-                        .phone(userId).chatId(chatId)
-                        .compressedData(null)
-                        .build();
-                chatHistoryService.save(chatHistoryPO);
-            }
             String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
             List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
             if(!CollectionUtils.isEmpty(chatHisVOS)){
