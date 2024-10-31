@@ -282,6 +282,13 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
                     .eq(ChatHistoryPO::getChatId, chatId);
             ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
+            if(chatHistoryPO == null){
+                chatHistoryPO = ChatHistoryPO.builder()
+                        .phone(userId).chatId(chatId)
+                        .compressedData(null)
+                        .build();
+                chatHistoryService.save(chatHistoryPO);
+            }
             String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
             List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
             chatHistoryString.addAll(chatHisVOS);
