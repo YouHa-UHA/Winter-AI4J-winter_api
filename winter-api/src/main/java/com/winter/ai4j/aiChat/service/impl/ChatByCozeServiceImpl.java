@@ -331,15 +331,8 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
         Page<ChatListPO> chatListPOS = ChatListService.page(page, chatListPOLambdaQueryWrapper);
-
-        // TODO 优化成工具类
-        BaseVO<List<ChatListPO>> build = new BaseVO<>();
-        build.setData(chatListPOS.getRecords());
-        build.setTotal(chatListPOS.getTotal());
-        build.setPageSize(baseDTO.getPageSize());
-        build.setPageNum(baseDTO.getPageNum());
-
-        return build;
+        BaseVO<List<ChatListPO>> listBaseVO = new BaseVO(chatListPOS);
+        return listBaseVO;
     }
 
 
