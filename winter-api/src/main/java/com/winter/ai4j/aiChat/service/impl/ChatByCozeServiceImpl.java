@@ -150,10 +150,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .map(CozeCreateRes::getId)
                         .orElse(null);
 
-                // 判断是不是有一个旧的会话没有被同步到mysql
-                List<ChatHisVO> chartHistories = new ArrayList<>();
-                List<String> chatHistoryString = new ArrayList<>();
-
                 String oldChartId = (String) redissonClient.getBucket("current:" + userId).get();
                 // 检查是否发生了对话切换
                 if (!StringUtils.isEmpty(oldChartId)) {
@@ -170,15 +166,12 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                     rChatHistoryString.clear();
                 }
 
-                // 会话列表存入mysql
-                ChatListPO chatListPO = ChatListPO.builder()
-                        .phone(userId).chatId(result).chatName("新会话")
-                        .time(LocalDateTime.now()).build();
-
+                ChatListPO chatListPO = ChatListPO.builder().phone(userId).chatId(result)
+                        .chatName("新会话").time(LocalDateTime.now()).build();
                 // 存入redis作为新会话
                 String chatListStr = JSON.toJSONString(chatListPO);
                 chatListClient.add(chatListStr);
-                redissonClient.getBucket("current:" + result).set(result);
+                redissonClient.getBucket("current:" + userId).set(result);
 
                 // 会话历史先载入mysql
                 ChatHistoryPO chatHistoryPO = ChatHistoryPO.builder()
@@ -186,7 +179,6 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .compressedData(null)
                         .build();
                 chatHistoryService.save(chatHistoryPO);
-
 
                 return result;
             } else {
