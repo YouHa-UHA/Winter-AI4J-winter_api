@@ -9,6 +9,8 @@ import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.ChatVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
 import com.winter.ai4j.aiChat.service.ChatService;
+import com.winter.ai4j.common.model.BaseDTO;
+import com.winter.ai4j.common.model.BaseVO;
 import com.winter.ai4j.common.result.Result;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import io.swagger.annotations.Api;
@@ -176,12 +178,12 @@ public class ChatController {
      */
     @ApiOperation(value = "FoxAI-查询历史列表", notes = "FoxAI-查询历史列表")
     @PostMapping(value = "/list")
-    public Result<List<ChatListPO>> list() {
+    public Result<BaseVO<List<ChatListPO>>> list(@RequestBody BaseDTO baseDTO) {
         String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
         if ("error".equals(userId)) {
             throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
         }
-        List<ChatListPO> chatListPOS = chatByCoseService.listHistory(userId);
+        BaseVO<List<ChatListPO>> chatListPOS = chatByCoseService.listHistory(baseDTO, userId);
         return Result.ok(chatListPOS);
     }
 

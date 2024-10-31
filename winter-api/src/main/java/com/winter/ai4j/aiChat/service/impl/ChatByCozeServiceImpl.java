@@ -24,6 +24,8 @@ import com.winter.ai4j.aiChat.service.ChatHistoryService;
 import com.winter.ai4j.aiChat.service.ChatService;
 import com.winter.ai4j.common.constant.ResultCodeEnum;
 import com.winter.ai4j.common.execption.BusinessException;
+import com.winter.ai4j.common.model.BaseDTO;
+import com.winter.ai4j.common.model.BaseVO;
 import com.winter.ai4j.common.util.GZipUtil;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -155,6 +157,13 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 String chatListStr = JSON.toJSONString(chatListPO);
                 chatListClient.add(chatListStr);
 
+                ChatHistoryPO chatHistoryPO = ChatHistoryPO.builder()
+                        .phone(userId).chatId(result)
+                        .compressedData(null)
+                        .build();
+                chatHistoryService.save(chatHistoryPO);
+
+
                 return result;
             } else {
                 throw new BusinessException("创建会话失败", ResultCodeEnum.FAIL.getCode());
@@ -282,6 +291,13 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
                     .eq(ChatHistoryPO::getChatId, chatId);
             ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
+            if (chatHistoryPO == null) {
+                chatHistoryPO = ChatHistoryPO.builder()
+                        .phone(userId).chatId(chatId)
+                        .compressedData(null)
+                        .build();
+                chatHistoryService.save(chatHistoryPO);
+            }
             String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
             List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
             chatHistoryString.addAll(chatHisVOS);
@@ -308,15 +324,22 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * 查询历史列表
      * */
     @Override
-    public List<ChatListPO> listHistory(String userId) {
+    public BaseVO<List<ChatListPO>> listHistory(BaseDTO baseDTO, String userId) {
         // 分页查询
-        Page<ChatListPO> page = new Page<>(1, 20);
+        Page<ChatListPO> page = new Page<>(baseDTO.getPageNum(), baseDTO.getPageNum());
 
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
-        // Page<ChatListPO> chatListPOS = ChatListService.page(page, chatListPOLambdaQueryWrapper);
-        List<ChatListPO> chatListPOS = ChatListService.list(chatListPOLambdaQueryWrapper);
-        return chatListPOS;
+        Page<ChatListPO> chatListPOS = ChatListService.page(page, chatListPOLambdaQueryWrapper);
+
+        // TODO 优化成工具类
+        BaseVO<List<ChatListPO>> build = new BaseVO<>();
+        build.setData(chatListPOS.getRecords());
+        build.setTotal(chatListPOS.getTotal());
+        build.setPageSize(baseDTO.getPageSize());
+        build.setPageNum(baseDTO.getPageNum());
+
+        return build;
     }
 
 

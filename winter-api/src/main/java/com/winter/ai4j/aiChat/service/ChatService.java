@@ -6,6 +6,8 @@ import com.winter.ai4j.aiChat.model.entity.ApiKeyPO;
 import com.winter.ai4j.aiChat.model.entity.ChatListPO;
 import com.winter.ai4j.aiChat.model.vo.ChatHisVO;
 import com.winter.ai4j.aiChat.model.vo.FollowVO;
+import com.winter.ai4j.common.model.BaseDTO;
+import com.winter.ai4j.common.model.BaseVO;
 import com.winter.ai4j.user.model.dto.UserDTO;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -62,6 +64,6 @@ public interface ChatService extends IService<ApiKeyPO> {
      * @param
      * @return List<ChatListPO>
      */
-    List<ChatListPO> listHistory(String userId);
+    BaseVO<List<ChatListPO>> listHistory(BaseDTO baseDTO, String userId);
 
 }

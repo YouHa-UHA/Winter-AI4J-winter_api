@@ -1,7 +1,6 @@
 package com.winter.ai4j.common.result;
 
 
-import com.winter.ai4j.common.constant.CodeEnum;
 import com.winter.ai4j.common.constant.ResultCodeEnum;
 import lombok.Data;
 
@@ -10,7 +9,6 @@ import java.util.Objects;
 
 /**
  * 全局统一返回结果类
- *
  */
 @Data
 public class Result<T> implements Serializable {
@@ -38,10 +36,11 @@ public class Result<T> implements Serializable {
 
     /**
      * 构建返回结果
-     * @param data 返回数据
-     * @param code 返回码
+     *
+     * @param data    返回数据
+     * @param code    返回码
      * @param message 返回消息
-     * @param <T> 返回数据类型
+     * @param <T>     返回数据类型
      * @return Result<T> 返回结果
      */
     private static <T> Result<T> build(T data, Integer code, String message) {
@@ -54,9 +53,10 @@ public class Result<T> implements Serializable {
 
     /**
      * 构建返回结果
-     * @param data 返回数据
+     *
+     * @param data     返回数据
      * @param codeEnum 返回码枚举
-     * @param <T> 返回数据类型
+     * @param <T>      返回数据类型
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> ok() {
@@ -65,9 +65,10 @@ public class Result<T> implements Serializable {
 
     /**
      * 构建返回结果
-     * @param data 返回数据
+     *
+     * @param data     返回数据
      * @param codeEnum 返回码枚举
-     * @param <T> 返回数据类型
+     * @param <T>      返回数据类型
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> ok(T data) {
@@ -76,9 +77,10 @@ public class Result<T> implements Serializable {
 
     /**
      * 构建返回结果
-     * @param data 返回数据
+     *
+     * @param data     返回数据
      * @param codeEnum 返回码枚举
-     * @param <T> 返回数据类型
+     * @param <T>      返回数据类型
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> fail() {
@@ -87,9 +89,10 @@ public class Result<T> implements Serializable {
 
     /**
      * 构建返回结果
-     * @param data 返回数据
+     *
+     * @param data     返回数据
      * @param codeEnum 返回码枚举
-     * @param <T> 返回数据类型
+     * @param <T>      返回数据类型
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> fail(T data) {
@@ -98,9 +101,10 @@ public class Result<T> implements Serializable {
 
     /**
      * 构建返回结果
-     * @param data 返回数据
+     *
+     * @param data     返回数据
      * @param codeEnum 返回码枚举
-     * @param <T> 返回数据类型
+     * @param <T>      返回数据类型
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> fail(T data, String message) {
@@ -109,9 +113,10 @@ public class Result<T> implements Serializable {
 
     /**
      * 构建返回结果
-     * @param data 返回数据
+     *
+     * @param data     返回数据
      * @param codeEnum 返回码枚举
-     * @param <T> 返回数据类型
+     * @param <T>      返回数据类型
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> custom(T data, Integer code, String message) {
@@ -120,6 +125,7 @@ public class Result<T> implements Serializable {
 
     /**
      * 设置返回消息
+     *
      * @param msg 消息内容
      * @return Result<T> 当前对象，用于链式调用
      */
@@ -130,6 +136,7 @@ public class Result<T> implements Serializable {
 
     /**
      * 设置返回码
+     *
      * @param code 返回码
      * @return Result<T> 当前对象，用于链式调用
      */
@@ -140,6 +147,7 @@ public class Result<T> implements Serializable {
 
     /**
      * 判断操作是否成功
+     *
      * @return boolean 如果成功返回true，否则返回false
      */
     public boolean isOk() {

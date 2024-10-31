@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 public enum ResultCodeEnum implements CodeEnum {
 
-    SUCCESS(200,"成功"),
+    SUCCESS(200,"请求成功"),
     FAIL(201, "失败"),
     ILLEGAL_REQUEST( 204, "非法请求"),
     LOGIN_AUTH(208, "未登陆"),
@@ -16,9 +16,8 @@ public enum ResultCodeEnum implements CodeEnum {
     SECKILL_ILLEGAL(217, "请求不合法"),
     SERVICE_ERROR(500, "服务异常");
 
-    private Integer code;
-
-    private String message;
+    private final Integer code;
+    private final String message;
 
     private ResultCodeEnum(Integer code, String message) {
         this.code = code;
