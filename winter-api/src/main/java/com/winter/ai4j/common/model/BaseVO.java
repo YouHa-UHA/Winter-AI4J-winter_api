@@ -22,6 +22,8 @@ import java.util.List;
  * @since 1.0.0
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class BaseVO<T> implements Serializable {
 

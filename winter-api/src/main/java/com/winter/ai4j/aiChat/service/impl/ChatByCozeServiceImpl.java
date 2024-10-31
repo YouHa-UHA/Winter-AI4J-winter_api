@@ -324,14 +324,27 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * 查询历史列表
      * */
     @Override
-    public BaseVO<List<ChatListPO>> listHistory(BaseDTO baseDTO, String userId) {
+    public BaseVO<ChatListPO> listHistory(BaseDTO baseDTO, String userId) {
         // 分页查询
         Page<ChatListPO> page = new Page<>(baseDTO.getPageNum(), baseDTO.getPageNum());
 
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
         Page<ChatListPO> chatListPOS = ChatListService.page(page, chatListPOLambdaQueryWrapper);
-        BaseVO<List<ChatListPO>> listBaseVO = new BaseVO(chatListPOS);
+        BaseVO<ChatListPO> listBaseVO = new BaseVO(chatListPOS);
+        // BaseVO<ChatListPO> listBaseVO = new BaseVO<>();
+        //     this.data = page.getRecords();
+        //     this.pageNum = page.getCurrent();
+        //     this.pageSize = page.getSize();
+        //     this.total = page.getTotal();
+        //     this.totalPages = page.getPages();
+        // List<ChatListPO> records = chatListPOS.getRecords();
+        // listBaseVO.setData(chatListPOS.getRecords());
+        // listBaseVO.setPageNum(chatListPOS.getCurrent());
+        // listBaseVO.setPageSize(chatListPOS.getSize());
+        // listBaseVO.setTotal(chatListPOS.getTotal());
+        // listBaseVO.setTotalPages(chatListPOS.getPages());
+
         return listBaseVO;
     }
 
