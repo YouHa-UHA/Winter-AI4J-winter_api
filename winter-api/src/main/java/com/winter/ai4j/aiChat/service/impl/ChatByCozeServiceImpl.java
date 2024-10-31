@@ -33,6 +33,7 @@ import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
@@ -42,6 +43,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -318,7 +320,12 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             }
             String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
             List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
-            chatHistoryString.addAll(chatHisVOS);
+            if(!CollectionUtils.isEmpty(chatHisVOS)){
+                for (String message : chatHisVOS) {
+                    ChatHisVO chatHisVO = JSON.parseObject(message, ChatHisVO.class);
+                    chartHistories.add(chatHisVO);
+                }
+            }
             // 更新当前对话
             redissonClient.getBucket("current:" + userId).set(chatId);
             RList<String> list = redissonClient.getList("chat_his:" + chatId);
@@ -326,12 +333,10 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         } else {
             // 没有发生对话切换，直接读取redis中的历史记录
             RList<String> list = redissonClient.getList("chat_his:" + chatId);
-            chatHistoryString.addAll(list);
-        }
-
-        for (String message : chatHistoryString) {
-            ChatHisVO chatHisVO = JSON.parseObject(message, ChatHisVO.class);
-            chartHistories.add(chatHisVO);
+            for (String s : list) {
+                ChatHisVO chatHisVO = JSON.parseObject(s, ChatHisVO.class);
+                chartHistories.add(chatHisVO);
+            }
         }
 
         return chartHistories;
