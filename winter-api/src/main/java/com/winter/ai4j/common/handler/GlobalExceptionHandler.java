@@ -5,6 +5,7 @@ import cn.dev33.satoken.util.SaResult;
 import com.winter.ai4j.common.execption.BusinessException;
 import com.winter.ai4j.common.result.Result;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -28,6 +29,13 @@ public class GlobalExceptionHandler {
     public SaResult handlerException(NotLoginException e, HttpServletResponse response) {
         response.setStatus(208);
         return SaResult.error("未登录 或 登录已过期");
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseBody
+    public Result error(HttpMessageNotReadableException e){
+        e.printStackTrace();
+        return Result.fail("参数错误");
     }
 
     @ExceptionHandler(Exception.class)

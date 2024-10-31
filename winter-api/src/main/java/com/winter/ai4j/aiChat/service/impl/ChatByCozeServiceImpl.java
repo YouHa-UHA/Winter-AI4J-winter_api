@@ -33,6 +33,8 @@ import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RList;
@@ -42,6 +44,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -150,19 +153,35 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .map(CozeCreateRes::getId)
                         .orElse(null);
 
-                // 记录会话历史,先载入redis
-                String format = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
-                ChatListPO chatListPO = ChatListPO.builder().phone(userId)
-                        .chatId(result).chatName("新会话").time(LocalDateTime.now()).build();
+                String oldChartId = (String) redissonClient.getBucket("current:" + userId).get();
+                // 检查是否发生了对话切换
+                if (!StringUtils.isEmpty(oldChartId)) {
+                    // 发生了对话切换，需要重新载入历史记录，先覆盖当前的
+                    RList<String> rChatHistoryString = redissonClient.getList("chat_his:" + oldChartId);
+                    // 更新历史记录
+                    LambdaQueryWrapper<ChatHistoryPO> oldChatHistoryWrapper = new LambdaQueryWrapper<>();
+                    oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                            .eq(ChatHistoryPO::getChatId, oldChartId);
+                    ChatHistoryPO oldChatHistoryPO = chatHistoryService.getOne(oldChatHistoryWrapper);
+                    oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
+                    chatHistoryService.saveOrUpdate(oldChatHistoryPO);
+                    // 清空当前历史
+                    rChatHistoryString.clear();
+                }
+
+                ChatListPO chatListPO = ChatListPO.builder().phone(userId).chatId(result)
+                        .chatName("新会话").time(LocalDateTime.now()).build();
+                // 存入redis作为新会话
                 String chatListStr = JSON.toJSONString(chatListPO);
                 chatListClient.add(chatListStr);
+                redissonClient.getBucket("current:" + userId).set(result);
 
+                // 会话历史先载入mysql
                 ChatHistoryPO chatHistoryPO = ChatHistoryPO.builder()
-                        .phone(userId).chatId(result)
+                        .chatName("新会话").phone(userId).chatId(result)
                         .compressedData(null)
                         .build();
                 chatHistoryService.save(chatHistoryPO);
-
 
                 return result;
             } else {
@@ -267,53 +286,57 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * */
     @Override
     public List<ChatHisVO> queryHistory(String chatId, String userId) {
+        // 首先确定chatId是否存在
+        LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
+        ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                .eq(ChatHistoryPO::getChatId, chatId);
+        ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
+        if (ObjectUtils.isEmpty(chatHistoryPO)) {
+            throw new BusinessException("无法找到对应的历史记录", ResultCodeEnum.FAIL.getCode());
+        }
+
         // 最终返回
         List<ChatHisVO> chartHistories = new ArrayList<>();
-        List<String> chatHistoryString = new ArrayList<>();
+
         // 当前历史
-        String oldChartId = (String) redissonClient.getBucket("current:" + chatId).get();
+        String oldChartId = (String) redissonClient.getBucket("current:" + userId).get();
         // 检查是否发生了对话切换
         if (!StringUtils.equals(chatId, oldChartId)) {
-            // 发生了对话切换，需要重新载入历史记录，先覆盖当前的
-            RList<String> rChatHistoryString = redissonClient.getList("chat_his:" + oldChartId);
-            // 更新历史记录
-            LambdaQueryWrapper<ChatHistoryPO> oldChatHistoryWrapper = new LambdaQueryWrapper<>();
-            oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
-                    .eq(ChatHistoryPO::getChatId, oldChartId);
-            ChatHistoryPO oldChatHistoryPO = chatHistoryService.getOne(oldChatHistoryWrapper);
-            oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
-            chatHistoryService.saveOrUpdate(oldChatHistoryPO);
-            // 清空当前历史
-            rChatHistoryString.clear();
-
-            // 读取新的历史记录
-            LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
-            ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
-                    .eq(ChatHistoryPO::getChatId, chatId);
-            ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
-            if (chatHistoryPO == null) {
-                chatHistoryPO = ChatHistoryPO.builder()
-                        .phone(userId).chatId(chatId)
-                        .compressedData(null)
-                        .build();
-                chatHistoryService.save(chatHistoryPO);
+            // 发生了对话切换，但要先确定旧的对话是否有历史记录
+            if(!StringUtils.isEmpty(oldChartId)){
+                RList<String> rChatHistoryString = redissonClient.getList("chat_his:" + oldChartId);
+                // 更新历史记录
+                LambdaQueryWrapper<ChatHistoryPO> oldChatHistoryWrapper = new LambdaQueryWrapper<>();
+                oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
+                        .eq(ChatHistoryPO::getChatId, oldChartId);
+                ChatHistoryPO oldChatHistoryPO = chatHistoryService.getOne(oldChatHistoryWrapper);
+                if(!ObjectUtils.isEmpty(oldChatHistoryPO)){
+                    oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
+                    chatHistoryService.saveOrUpdate(oldChatHistoryPO);
+                }
+                // 清空当前历史
+                rChatHistoryString.clear();
             }
+
             String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
             List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
-            chatHistoryString.addAll(chatHisVOS);
+            if(!CollectionUtils.isEmpty(chatHisVOS)){
+                for (String message : chatHisVOS) {
+                    ChatHisVO chatHisVO = JSON.parseObject(message, ChatHisVO.class);
+                    chartHistories.add(chatHisVO);
+                }
+            }
             // 更新当前对话
-            redissonClient.getBucket("current:" + chatId).set(chatId);
+            redissonClient.getBucket("current:" + userId).set(chatId);
             RList<String> list = redissonClient.getList("chat_his:" + chatId);
             list.addAll(chatHisVOS);
         } else {
             // 没有发生对话切换，直接读取redis中的历史记录
             RList<String> list = redissonClient.getList("chat_his:" + chatId);
-            chatHistoryString.addAll(list);
-        }
-
-        for (String message : chatHistoryString) {
-            ChatHisVO chatHisVO = JSON.parseObject(message, ChatHisVO.class);
-            chartHistories.add(chatHisVO);
+            for (String s : list) {
+                ChatHisVO chatHisVO = JSON.parseObject(s, ChatHisVO.class);
+                chartHistories.add(chatHisVO);
+            }
         }
 
         return chartHistories;
@@ -324,14 +347,13 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
      * 查询历史列表
      * */
     @Override
-    public BaseVO<List<ChatListPO>> listHistory(BaseDTO baseDTO, String userId) {
+    public BaseVO<ChatListPO> listHistory(BaseDTO baseDTO, String userId) {
         // 分页查询
-        Page<ChatListPO> page = new Page<>(baseDTO.getPageNum(), baseDTO.getPageNum());
-
+        Page<ChatListPO> page = new Page<>(baseDTO.getPageNum(), baseDTO.getPageSize());
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
         Page<ChatListPO> chatListPOS = ChatListService.page(page, chatListPOLambdaQueryWrapper);
-        BaseVO<List<ChatListPO>> listBaseVO = new BaseVO(chatListPOS);
+        BaseVO<ChatListPO> listBaseVO = new BaseVO(chatListPOS);
         return listBaseVO;
     }
 

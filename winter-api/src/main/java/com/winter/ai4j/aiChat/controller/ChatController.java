@@ -61,6 +61,42 @@ public class ChatController {
 
 
     /**
+     * Chat-查询对话历史
+     *
+     * @param question 用户ID
+     * @return 查询对话历史结果
+     */
+    @ApiOperation(value = "FoxAI-查询对话历史", notes = "FoxAI-查询对话历史")
+    @PostMapping(value = "/query")
+    public Result<List<ChatHisVO>> query(@RequestBody QuestionDTO question) {
+        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
+        if ("error".equals(userId)) {
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
+        }
+        String chatId = question.getChatId();
+        List<ChatHisVO> result = chatByCoseService.queryHistory(chatId, userId);
+        return Result.ok(result);
+    }
+
+
+    /**
+     * Chat-查询历史列表
+     *
+     * @return 查询历史列表结果
+     */
+    @ApiOperation(value = "FoxAI-查询历史列表", notes = "FoxAI-查询历史列表")
+    @PostMapping(value = "/list")
+    public Result<BaseVO<ChatListPO>> list(@RequestBody BaseDTO baseDTO) {
+        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
+        if ("error".equals(userId)) {
+            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
+        }
+        BaseVO<ChatListPO> chatListPOS = chatByCoseService.listHistory(baseDTO, userId);
+        return Result.ok(chatListPOS);
+    }
+
+
+    /**
      * Chat-创建会话
      *
      * @return 创建chat 结果
@@ -149,42 +185,6 @@ public class ChatController {
     public Result<FollowVO> follow(@RequestBody QuestionDTO question) {
         FollowVO follow = chatByCoseService.getFollow(question);
         return Result.ok(follow);
-    }
-
-
-    /**
-     * Chat-查询对话历史
-     *
-     * @param question 用户ID
-     * @return 查询对话历史结果
-     */
-    @ApiOperation(value = "FoxAI-查询对话历史", notes = "FoxAI-查询对话历史")
-    @PostMapping(value = "/query")
-    public Result<List<ChatHisVO>> query(@RequestBody QuestionDTO question) {
-        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        if ("error".equals(userId)) {
-            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
-        }
-        String chatId = question.getChatId();
-        List<ChatHisVO> result = chatByCoseService.queryHistory(chatId, userId);
-        return Result.ok(result);
-    }
-
-
-    /**
-     * Chat-查询历史列表
-     *
-     * @return 查询历史列表结果
-     */
-    @ApiOperation(value = "FoxAI-查询历史列表", notes = "FoxAI-查询历史列表")
-    @PostMapping(value = "/list")
-    public Result<BaseVO<List<ChatListPO>>> list(@RequestBody BaseDTO baseDTO) {
-        String userId = StpUtil.getLoginIdDefaultNull() != null ? StpUtil.getLoginIdAsString() : "error";
-        if ("error".equals(userId)) {
-            throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
-        }
-        BaseVO<List<ChatListPO>> chatListPOS = chatByCoseService.listHistory(baseDTO, userId);
-        return Result.ok(chatListPOS);
     }
 
 

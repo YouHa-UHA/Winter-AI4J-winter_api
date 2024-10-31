@@ -204,7 +204,7 @@ public class ChatByLlamaServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> 
     }
 
     @Override
-    public BaseVO<List<ChatListPO>> listHistory(BaseDTO baseDTO, String userId) {
+    public BaseVO<ChatListPO> listHistory(BaseDTO baseDTO, String userId) {
 
         return null;
     }

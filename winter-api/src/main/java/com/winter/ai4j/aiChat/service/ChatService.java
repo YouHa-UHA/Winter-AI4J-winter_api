@@ -64,6 +64,6 @@ public interface ChatService extends IService<ApiKeyPO> {
      * @param
      * @return List<ChatListPO>
      */
-    BaseVO<List<ChatListPO>> listHistory(BaseDTO baseDTO, String userId);
+    BaseVO<ChatListPO> listHistory(BaseDTO baseDTO, String userId);
 
 }
