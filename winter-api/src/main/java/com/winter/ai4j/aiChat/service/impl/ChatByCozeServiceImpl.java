@@ -286,7 +286,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             // 清空当前历史
             rChatHistoryString.clear();
 
-
+            // 读取新的历史记录
             LambdaQueryWrapper<ChatHistoryPO> ChatHistoryWrapper = new LambdaQueryWrapper<>();
             ChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
                     .eq(ChatHistoryPO::getChatId, chatId);
@@ -343,7 +343,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         private final UserDTO user;
         private final QuestionDTO question;
-        private SseEmitter emitter;
+        private final SseEmitter emitter;
 
         public CozeEventSourceListener(UserDTO user, QuestionDTO question, SseEmitter emitter) {
             this.user = user;
