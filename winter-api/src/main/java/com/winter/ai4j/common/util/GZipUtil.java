@@ -1,5 +1,8 @@
 package com.winter.ai4j.common.util;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -22,10 +25,11 @@ import java.util.zip.GZIPOutputStream;
 public class GZipUtil {
 
 
-    /*
-    * */
+    /**
+     * 压缩字符串
+     */
     public static byte[] compressString(String str) {
-        if (str == null || str.length() == 0) {
+        if (StringUtils.isEmpty(str)) {
             return null;
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -38,10 +42,11 @@ public class GZipUtil {
     }
 
 
-    /*
-    * */
+    /**
+     * 解压缩字符串
+     */
     public static String decompressString(byte[] compressed) {
-        if (compressed == null || compressed.length == 0) {
+        if (ArrayUtils.isEmpty(compressed)) {
             return "";
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
