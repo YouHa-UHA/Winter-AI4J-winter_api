@@ -149,16 +149,19 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .map(CozeRes::getData)
                         .map(CozeCreateRes::getId)
                         .orElse(null);
+                // 会话列表存入mysql
+                ChatListPO chatListPO = ChatListPO.builder()
+                        .phone(userId).chatId(result).chatName("新会话")
+                        .time(LocalDateTime.now()).build();
+                // ChatListService.save(chatListPO);
 
-                // 记录会话历史,先载入redis
-                String format = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
-                ChatListPO chatListPO = ChatListPO.builder().phone(userId)
-                        .chatId(result).chatName("新会话").time(LocalDateTime.now()).build();
+                // 存入redis作为新会话
                 String chatListStr = JSON.toJSONString(chatListPO);
                 chatListClient.add(chatListStr);
 
+                // 会话历史先载入mysql
                 ChatHistoryPO chatHistoryPO = ChatHistoryPO.builder()
-                        .phone(userId).chatId(result)
+                        .chatName("新会话").phone(userId).chatId(result)
                         .compressedData(null)
                         .build();
                 chatHistoryService.save(chatHistoryPO);
@@ -326,7 +329,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     @Override
     public BaseVO<ChatListPO> listHistory(BaseDTO baseDTO, String userId) {
         // 分页查询
-        Page<ChatListPO> page = new Page<>(baseDTO.getPageNum(), baseDTO.getPageNum());
+        Page<ChatListPO> page = new Page<>(baseDTO.getPageNum(), baseDTO.getPageSize());
         LambdaQueryWrapper<ChatListPO> chatListPOLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatListPOLambdaQueryWrapper.eq(ChatListPO::getPhone, userId);
         Page<ChatListPO> chatListPOS = ChatListService.page(page, chatListPOLambdaQueryWrapper);
