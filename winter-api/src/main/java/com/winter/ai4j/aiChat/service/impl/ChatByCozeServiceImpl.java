@@ -417,7 +417,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .contentType("text").ifLike("0")
                         .chatHisId(String.valueOf(System.currentTimeMillis())).build();
                 String answer = JSON.toJSONString(chatHisPO);
-                redissonClient.getList("user_his:" + chatId).add(answer);
+                redissonClient.getList("chat_his:" + chatId).add(answer);
             }
 
             if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeQueRes.getType())) {
@@ -480,7 +480,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                     .chatHisId(String.valueOf(System.currentTimeMillis())).build();
             String answerJson = JSON.toJSONString(chatHisPO);
             // 维护历史记录
-            redissonClient.getList("user_his:" + chatId).add(answerJson);
+            redissonClient.getList("chat_his:" + chatId).add(answerJson);
             closeEventByUser(chatId, cozeQueRes);
             eventSource.cancel();
         }
