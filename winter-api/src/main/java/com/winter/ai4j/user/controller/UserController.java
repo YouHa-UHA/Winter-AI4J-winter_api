@@ -34,7 +34,7 @@ public class UserController {
     /*
      * 用户登录
      * */
-    @ApiOperation(value = "login", notes = "login")
+    @ApiOperation(value = "用户登录", notes = "用户登录")
     @PostMapping(value = "/login")
     public SaResult login(@RequestBody UserDTO req) {
 
@@ -57,7 +57,7 @@ public class UserController {
     /*
      * 登录状态获取
      * */
-    @ApiOperation(value = "isLogin", notes = "login")
+    @ApiOperation(value = "登录状态获取", notes = "验证登录状态")
     @PostMapping(value = "/isLogin")
     public SaResult isLogin() {
         boolean login = StpUtil.isLogin();
@@ -70,7 +70,7 @@ public class UserController {
     /*
      * 注销登录
      * */
-    @ApiOperation(value = "logout", notes = "logout")
+    @ApiOperation(value = "注销登录", notes = "注销登录并清除token")
     @PostMapping(value = "/logout")
     public SaResult logout() {
         StpUtil.logout();
