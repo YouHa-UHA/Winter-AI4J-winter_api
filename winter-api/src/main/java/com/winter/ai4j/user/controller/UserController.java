@@ -53,4 +53,30 @@ public class UserController {
 
     }
 
+
+    /*
+     * 登录状态获取
+     * */
+    @ApiOperation(value = "isLogin", notes = "login")
+    @PostMapping(value = "/isLogin")
+    public SaResult isLogin() {
+        boolean login = StpUtil.isLogin();
+        if (login) {
+            return SaResult.data("已登录");
+        }
+        return SaResult.error("未登录");
+    }
+
+    /*
+     * 注销登录
+     * */
+    @ApiOperation(value = "logout", notes = "logout")
+    @PostMapping(value = "/logout")
+    public SaResult logout() {
+        StpUtil.logout();
+        return SaResult.ok("已注销");
+    }
+
+
+
 }
