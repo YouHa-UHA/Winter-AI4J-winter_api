@@ -12,7 +12,7 @@ import java.io.Serializable;
  * </p >
  *
  * @author wyh
- * Date: 2024/6/3 下午3:35
+ * Date: 2024/9/3 下午3:35
  */
 @Data
 public class IpLocation implements Serializable {

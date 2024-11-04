@@ -19,7 +19,7 @@ import java.util.zip.GZIPOutputStream;
  * @author
  * @version 1.0.0
  * @since 1.0.0
- * Date: 2024/6/26 下午5:26
+ * Date: 2024/9/26 下午5:26
  */
 
 public class GZipUtil {
