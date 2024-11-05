@@ -38,7 +38,7 @@ import java.util.List;
  * </pre></blockquote>
  *
  * @author WYH4J
- * Date: 2024/8/12 下午5:10
+ * Date: 2024/10/12 下午5:10
  * @version 1.0.0
  * @since 1.0.0
  */
@@ -135,7 +135,7 @@ public class ChatController {
             throw new NotLoginException("未登录", NotLoginException.NOT_TOKEN, NotLoginException.NOT_TOKEN_MESSAGE);
         }
 
-        // 创建SseEmitter对象，注意这里的timeout是发送时间，不是超时时间，网上的文档有问题
+        // 创建SseEmitter对象，注意这里 的timeout是发送时间，不是超时时间，网上的文档有问题
         SseEmitter emitter = new SseEmitter(1800000L);
         emitter.onCompletion(() -> {
         });
