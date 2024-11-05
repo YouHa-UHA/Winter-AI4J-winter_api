@@ -96,7 +96,7 @@ public class Result<T> implements Serializable {
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> fail(T data) {
-        return build(data, ResultCodeEnum.FAIL.getCode(), ResultCodeEnum.FAIL.getMessage());
+        return build(data, ResultCodeEnum.BAD_REQUEST.getCode(), ResultCodeEnum.BAD_REQUEST.getMessage());
     }
 
     /**
@@ -108,7 +108,7 @@ public class Result<T> implements Serializable {
      * @return Result<T> 返回结果
      */
     public static <T> Result<T> fail(T data, String message) {
-        return build(data, ResultCodeEnum.FAIL.getCode(), message);
+        return build(data, ResultCodeEnum.BAD_REQUEST.getCode(), message);
     }
 
     /**
