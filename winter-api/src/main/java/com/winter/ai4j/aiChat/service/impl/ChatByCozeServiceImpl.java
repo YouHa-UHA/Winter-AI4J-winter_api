@@ -114,7 +114,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     @Override
     public String createChat(String userId) {
         if (apiKeys.get("ai_coze") == null) {
-            throw new BusinessException("无法找到对应的API Key", ResultCodeEnum.FAIL.getCode());
+            throw new BusinessException("无法找到对应的API Key", ResultCodeEnum.BAD_REQUEST.getCode());
         }
 
         RList<String> chatListClient = redissonClient.getList("chat:" + userId + ":list");
@@ -185,11 +185,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
                 return result;
             } else {
-                throw new BusinessException("创建会话失败", ResultCodeEnum.FAIL.getCode());
+                throw new BusinessException("创建会话失败", ResultCodeEnum.BAD_REQUEST.getCode());
             }
         } catch (IOException e) {
             log.error("创建会话失败", e);
-            throw new BusinessException("创建会话失败", ResultCodeEnum.FAIL.getCode());
+            throw new BusinessException("创建会话失败", ResultCodeEnum.BAD_REQUEST.getCode());
         }
     }
 
@@ -292,7 +292,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 .eq(ChatHistoryPO::getChatId, chatId);
         ChatHistoryPO chatHistoryPO = chatHistoryService.getOne(ChatHistoryWrapper);
         if (ObjectUtils.isEmpty(chatHistoryPO)) {
-            throw new BusinessException("无法找到对应的历史记录", ResultCodeEnum.FAIL.getCode());
+            throw new BusinessException("无法找到对应的历史记录", ResultCodeEnum.BAD_REQUEST.getCode());
         }
 
         // 最终返回
