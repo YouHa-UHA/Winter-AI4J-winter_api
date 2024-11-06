@@ -33,7 +33,6 @@ import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -57,6 +56,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.winter.ai4j.common.constant.RedisCodeEnum.REDIS_CHAT_FOLLOW;
+import static com.winter.ai4j.common.constant.RedisCodeEnum.REDIS_CHAT_HIS;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 /**
@@ -157,7 +158,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                 // 检查是否发生了对话切换
                 if (!StringUtils.isEmpty(oldChartId)) {
                     // 发生了对话切换，需要重新载入历史记录，先覆盖当前的
-                    RList<String> rChatHistoryString = redissonClient.getList("chat_his:" + oldChartId);
+                    RList<String> rChatHistoryString = redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + oldChartId);
                     // 更新历史记录
                     LambdaQueryWrapper<ChatHistoryPO> oldChatHistoryWrapper = new LambdaQueryWrapper<>();
                     oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
@@ -216,7 +217,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         ApiKeyPO apiKeyPO = apiKeys.get(question.getAppIndex());
         // 记录问题历史内容
         String chatId = question.getChatId();
-        RList<String> chatHistoryString = redissonClient.getList("chat_his:" + chatId);
+        RList<String> chatHistoryString = redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + chatId);
         ChatHisPO chatHisPO = ChatHisPO.builder()
                 .role("user")
                 .type("question")
@@ -273,7 +274,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
     @Override
     public FollowVO getFollow(QuestionDTO question) {
         String chartId = question.getChatId();
-        RList<String> list = redissonClient.getList("chat_follow:" + chartId);
+        RList<String> list = redissonClient.getList(REDIS_CHAT_FOLLOW.getCode() + ":" + chartId);
         int size = list.size();
         List<String> safeSubList = new ArrayList<>(list.subList(Math.max(size - 3, 0), size));
         list.clear();
@@ -303,14 +304,14 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
         // 检查是否发生了对话切换
         if (!StringUtils.equals(chatId, oldChartId)) {
             // 发生了对话切换，但要先确定旧的对话是否有历史记录
-            if(!StringUtils.isEmpty(oldChartId)){
-                RList<String> rChatHistoryString = redissonClient.getList("chat_his:" + oldChartId);
+            if (!StringUtils.isEmpty(oldChartId)) {
+                RList<String> rChatHistoryString = redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + oldChartId);
                 // 更新历史记录
                 LambdaQueryWrapper<ChatHistoryPO> oldChatHistoryWrapper = new LambdaQueryWrapper<>();
                 oldChatHistoryWrapper.eq(ChatHistoryPO::getPhone, userId)
                         .eq(ChatHistoryPO::getChatId, oldChartId);
                 ChatHistoryPO oldChatHistoryPO = chatHistoryService.getOne(oldChatHistoryWrapper);
-                if(!ObjectUtils.isEmpty(oldChatHistoryPO)){
+                if (!ObjectUtils.isEmpty(oldChatHistoryPO)) {
                     oldChatHistoryPO.setCompressedData(GZipUtil.compressString(JSON.toJSONString(rChatHistoryString)));
                     chatHistoryService.saveOrUpdate(oldChatHistoryPO);
                 }
@@ -320,7 +321,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
             String jsonString = GZipUtil.decompressString(chatHistoryPO.getCompressedData());
             List<String> chatHisVOS = JSON.parseArray(jsonString, String.class);
-            if(!CollectionUtils.isEmpty(chatHisVOS)){
+            if (!CollectionUtils.isEmpty(chatHisVOS)) {
                 for (String message : chatHisVOS) {
                     ChatHisVO chatHisVO = JSON.parseObject(message, ChatHisVO.class);
                     chartHistories.add(chatHisVO);
@@ -328,11 +329,11 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
             }
             // 更新当前对话
             redissonClient.getBucket("current:" + userId).set(chatId);
-            RList<String> list = redissonClient.getList("chat_his:" + chatId);
+            RList<String> list = redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + chatId);
             list.addAll(chatHisVOS);
         } else {
             // 没有发生对话切换，直接读取redis中的历史记录
-            RList<String> list = redissonClient.getList("chat_his:" + chatId);
+            RList<String> list = redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + chatId);
             for (String s : list) {
                 ChatHisVO chatHisVO = JSON.parseObject(s, ChatHisVO.class);
                 chartHistories.add(chatHisVO);
@@ -417,12 +418,12 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .contentType("text").ifLike("0")
                         .chatHisId(String.valueOf(System.currentTimeMillis())).build();
                 String answer = JSON.toJSONString(chatHisPO);
-                redissonClient.getList("chat_his:" + chatId).add(answer);
+                redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + chatId).add(answer);
             }
 
             if ("conversation.message.completed".equals(type) && "follow_up".equals(cozeQueRes.getType())) {
                 // 联想问题载入redis
-                RList<String> list = redissonClient.getList("chat_follow:" + chatId);
+                RList<String> list = redissonClient.getList(REDIS_CHAT_FOLLOW.getCode() + ":" + chatId);
                 list.add(cozeQueRes.getContent());
             }
 
@@ -437,7 +438,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
 
         @Override
         public void onFailure(EventSource eventSource, Throwable t, Response response) {
-            RList<String> chatHistorySemi = redissonClient.getList("chat_his:" + question.getChatId());
+            RList<String> chatHistorySemi = redissonClient.getList("chat_intermediate:"+ question.getChatId());
             String result = String.join("", chatHistorySemi);
             chatHistorySemi.clear();
             eventSource.cancel();
@@ -450,7 +451,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                         .ifLike("0")
                         .chatHisId(String.valueOf(System.currentTimeMillis())).build();
                 String answerJson = JSON.toJSONString(chatHisPO);
-                redissonClient.getList("user_his:" + question.getChatId()).add(answerJson);
+                redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + question.getChatId()).add(answerJson);
                 closeEventByModel(emitter, question, user);
             }
         }
@@ -480,7 +481,7 @@ public class ChatByCozeServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyPO> i
                     .chatHisId(String.valueOf(System.currentTimeMillis())).build();
             String answerJson = JSON.toJSONString(chatHisPO);
             // 维护历史记录
-            redissonClient.getList("chat_his:" + chatId).add(answerJson);
+            redissonClient.getList(REDIS_CHAT_HIS.getCode() + ":" + chatId).add(answerJson);
             closeEventByUser(chatId, cozeQueRes);
             eventSource.cancel();
         }

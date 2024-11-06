@@ -16,12 +16,13 @@ import lombok.Getter;
 @Getter
 public enum RedisCodeEnum implements CodeEnum{
 
-    REDIS(101,"chat");
+    REDIS_CHAT_FOLLOW("chat_follow","联想回答"),
+    REDIS_CHAT_HIS("chat_his","历史记录");
 
-    private final Integer code;
+    private final String code;
     private final String message;
 
-    private RedisCodeEnum(Integer code, String message) {
+    private RedisCodeEnum(String code, String message) {
         this.code = code;
         this.message = message;
     }
