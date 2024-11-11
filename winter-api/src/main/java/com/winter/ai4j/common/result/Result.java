@@ -21,7 +21,7 @@ public class Result<T> implements Serializable {
     /**
      * 返回消息
      */
-    private String message;
+    private String msg;
 
     /**
      * 返回数据
@@ -47,7 +47,7 @@ public class Result<T> implements Serializable {
         Result<T> result = new Result<>();
         result.setData(data);
         result.setCode(code);
-        result.setMessage(message);
+        result.setMsg(message);
         return result;
     }
 
@@ -129,8 +129,8 @@ public class Result<T> implements Serializable {
      * @param msg 消息内容
      * @return Result<T> 当前对象，用于链式调用
      */
-    public Result<T> setMessage(String msg) {
-        this.message = msg;
+    public Result<T> setMsg(String msg) {
+        this.msg = msg;
         return this;
     }
 
