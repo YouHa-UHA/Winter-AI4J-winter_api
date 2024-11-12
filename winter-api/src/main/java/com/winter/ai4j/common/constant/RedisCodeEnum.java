@@ -14,7 +14,7 @@ import lombok.Getter;
  * @since 1.0.0
  */
 @Getter
-public enum RedisCodeEnum implements CodeEnum{
+public enum RedisCodeEnum{
 
     REDIS_CHAT_FOLLOW("chat_follow","联想回答"),
     REDIS_CHAT_HIS("chat_his","历史记录");
