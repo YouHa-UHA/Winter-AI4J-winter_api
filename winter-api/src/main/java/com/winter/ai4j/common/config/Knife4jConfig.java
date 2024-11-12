@@ -1,4 +1,4 @@
-package com.winter.ai4j.common.swagger;
+package com.winter.ai4j.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

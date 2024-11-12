@@ -1,7 +1,7 @@
 package com.winter.ai4j.common.handler;
 
 import cn.dev33.satoken.exception.NotLoginException;
-import cn.dev33.satoken.util.SaResult;
+import com.winter.ai4j.common.constant.ResultCodeEnum;
 import com.winter.ai4j.common.execption.BusinessException;
 import com.winter.ai4j.common.result.Result;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +26,8 @@ import javax.servlet.http.HttpServletResponse;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotLoginException.class)
-    public SaResult handlerException(NotLoginException e, HttpServletResponse response) {
-        response.setStatus(208);
-        return SaResult.error("未登录 或 登录已过期");
+    public Result handlerException(NotLoginException e, HttpServletResponse response) {
+        return Result.custom(null,ResultCodeEnum.BAD_UNAUTHORIZED.getCode(),ResultCodeEnum.BAD_UNAUTHORIZED.getMessage());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
